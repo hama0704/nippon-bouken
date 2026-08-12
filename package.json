@@ -1,0 +1,13 @@
+{
+  "name": "nippon-bouken",
+  "version": "1.0.0",
+  "private": true,
+  "description": "にっぽん冒険記 ― 47都道府県・県庁所在地の手書き学習RPG",
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes serve . -l 4321",
+    "test": "node tests/run-node.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

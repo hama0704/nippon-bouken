@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <!--
+    viewport-fit=cover : iPad/iPhone のセーフエリアまで描画する
+    user-scalable=no   : 手書き中のピンチ誤爆を防ぐ（拡大はアプリ内のボタンで提供）
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0">
+  <meta name="description" content="日本を旅して魔王を倒す、47都道府県・県庁所在地の手書き学習RPG">
+  <meta name="theme-color" content="#16233f">
+
+  <!-- iOS でホーム画面に追加したときにフルスクリーン起動させる -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="にっぽん冒険記">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+
+  <title>にっぽん冒険記 ― 都道府県RPG</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/screens.css">
+</head>
+<body>
+  <!--
+    画面はすべて JS が #screen-root の中に組み立てて差し替える（SPA）。
+    HTML 側には器だけを置き、構造の責務は src/ui/screens/* に集約する。
+  -->
+  <div id="app">
+    <main id="screen-root" class="screen-root"></main>
+
+    <!-- モーダル・演出のオーバーレイ用レイヤ -->
+    <div id="overlay-root" class="overlay-root" aria-live="polite"></div>
+
+    <!-- スクリーンリーダー向けの通知専用領域（視覚的には非表示） -->
+    <div id="sr-announcer" class="visually-hidden" role="status" aria-live="assertive"></div>
+  </div>
+
+  <!-- JS 無効・読み込み失敗時のフォールバック -->
+  <noscript>
+    <p style="padding:2rem;color:#fff;font-size:1.2rem">
+      このアプリを遊ぶには JavaScript を有効にしてください。
+    </p>
+  </noscript>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

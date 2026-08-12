@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テスト ― にっぽん冒険記</title>
+  <style>
+    body {
+      margin: 0; padding: 1.5rem;
+      background: #16233f; color: #f2f6ff;
+      font-family: "Consolas", "SF Mono", monospace;
+      font-size: 14px; line-height: 1.7;
+    }
+    h1 { font-size: 1.4rem; color: #ffcc33; }
+    #summary { font-size: 1.2rem; font-weight: bold; margin: 1rem 0; padding: 0.8rem 1rem; border-radius: 8px; }
+    #summary.pass { background: #14532d; color: #86efac; }
+    #summary.fail { background: #7f1d1d; color: #fca5a5; }
+    pre { white-space: pre-wrap; margin: 0; }
+    .suite { color: #ffcc33; margin-top: 0.8rem; }
+    .ok   { color: #86efac; }
+    .ng   { color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <h1>にっぽん冒険記 ― テスト</h1>
+  <p>採点・経験値・忘却曲線・地図データ・セーブの回帰テストです。</p>
+  <div id="summary">実行中…</div>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import { run } from "./test-runner.js";
+    import "./tests.js";
+
+    const output = document.getElementById("output");
+    const summary = document.getElementById("summary");
+
+    const result = await run((line, ok) => {
+      const span = document.createElement("span");
+      span.className = line.startsWith("──") ? "suite" : (ok ? "ok" : "ng");
+      span.textContent = line + "\n";
+      output.appendChild(span);
+    });
+
+    summary.className = result.failed === 0 ? "pass" : "fail";
+    summary.textContent = result.failed === 0
+      ? `すべて成功: ${result.passed}件`
+      : `成功 ${result.passed}件 / 失敗 ${result.failed}件`;
+  </script>
+</body>
+</html>

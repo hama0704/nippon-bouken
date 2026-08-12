@@ -1,0 +1,34 @@
+{
+  "name": "にっぽん冒険記 ― 都道府県RPG",
+  "short_name": "にっぽん冒険記",
+  "description": "日本を旅して魔王を倒す、47都道府県・県庁所在地の手書き学習RPG",
+  "lang": "ja",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16233f",
+  "theme_color": "#16233f",
+  "categories": ["education", "games"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

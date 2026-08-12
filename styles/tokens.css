@@ -1,0 +1,138 @@
+/* ============================================================================
+ * tokens.css ― デザインの「元栓」
+ * ----------------------------------------------------------------------------
+ * 色・文字サイズ・余白・角丸・影をすべてここのCSS変数で定義している。
+ * 見た目を変えたいときは、原則このファイルだけを編集すればよい。
+ * 詳しくは docs/DESIGN.md を参照。
+ * ==========================================================================*/
+
+:root {
+  /* --- 基本の配色（RPGらしい夜空＋金色） ------------------------------- */
+  --c-bg:            #16233f;  /* 画面いちばん奥の背景 */
+  --c-bg-deep:       #0e1729;  /* さらに沈んだ背景（ヘッダ・フッタ） */
+  --c-surface:       #22345c;  /* パネル・カードの面 */
+  --c-surface-2:     #2c4372;  /* パネルの一段明るい面 */
+  --c-border:        #4a6ba8;  /* 枠線 */
+  --c-accent:        #ffcc33;  /* アクセント（金）。見出し・強調 */
+  --c-accent-dark:   #c99a1f;  /* アクセントの影 */
+  --c-text:          #f2f6ff;  /* 本文 */
+  --c-text-dim:      #a8bce0;  /* 補助テキスト */
+  --c-text-on-light: #16233f;  /* 明るい面の上に乗る文字 */
+
+  /* --- 判定の色 ---------------------------------------------------------
+   * 色だけに意味を持たせない。○△× は必ず「形」と「文字」も併記すること。
+   * （色覚多様性への配慮 / WCAG 1.4.1 非テキストコントラスト）
+   * -------------------------------------------------------------------- */
+  --c-judge-maru:    #4ade80;  /* ○ 正解 */
+  --c-judge-sankaku: #fbbf24;  /* △ おしい */
+  --c-judge-batsu:   #f87171;  /* × ちがう */
+
+  /* --- 経験値・HP バー --------------------------------------------------- */
+  --c-exp:           #7dd3fc;
+  --c-hp:            #4ade80;
+  --c-hp-low:        #f87171;
+  --c-enemy-hp:      #f472b6;
+
+  /* --- 地方カラー（地図・図鑑・敵テーマで共有） --------------------------
+   * 明度差を確保してあるので、色覚モードでも輪郭＋ラベルで識別できる。
+   * -------------------------------------------------------------------- */
+  --c-region-hokkaido: #5eead4;
+  --c-region-tohoku:   #7dd3fc;
+  --c-region-kanto:    #fcd34d;
+  --c-region-chubu:    #c4b5fd;
+  --c-region-kinki:    #fda4af;
+  --c-region-chugoku:  #6ee7b7;
+  --c-region-shikoku:  #fdba74;
+  --c-region-kyushu:   #f9a8d4;
+  --c-region-okinawa:  #67e8f9;
+
+  /* --- 文字サイズ -------------------------------------------------------
+   * --font-scale は設定画面から 0.9 / 1.0 / 1.25 に切り替わる。
+   * 各サイズはこの倍率を掛けた計算値なので、1箇所変えれば全体が追従する。
+   * -------------------------------------------------------------------- */
+  --font-scale: 1;
+  --fs-xs:   calc(0.75rem * var(--font-scale));  /* 12px 補足 */
+  --fs-sm:   calc(0.95rem * var(--font-scale));  /* 15px ラベル */
+  --fs-base: calc(1.25rem * var(--font-scale));  /* 20px 本文 */
+  --fs-lg:   calc(1.5rem  * var(--font-scale));  /* 24px 見出し小 */
+  --fs-xl:   calc(2rem    * var(--font-scale));  /* 32px 問題文 */
+  --fs-2xl:  calc(2.5rem  * var(--font-scale));  /* 40px 答え */
+  --fs-3xl:  calc(3.25rem * var(--font-scale));  /* 52px タイトル */
+
+  --ff-base: "Hiragino Maru Gothic ProN", "ヒラギノ丸ゴ ProN",
+             "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  /* 手書きの答え合わせ表示に使う（教科書体があれば優先） */
+  --ff-kyokasho: "UD Digi Kyokasho NP-R", "Hiragino Mincho ProN",
+                 "Yu Mincho", serif;
+
+  /* --- 余白 -------------------------------------------------------------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-8: 3rem;
+
+  /* --- 形 ---------------------------------------------------------------- */
+  --radius-sm: 8px;
+  --radius:    14px;
+  --radius-lg: 22px;
+  --border-w:  3px;
+
+  /* ゲーム機らしい「押せる立体感」。押下時は translateY で沈ませる */
+  --shadow-raised: 0 4px 0 var(--c-accent-dark), 0 6px 12px rgb(0 0 0 / 0.35);
+  --shadow-panel:  0 4px 0 rgb(0 0 0 / 0.3), 0 8px 20px rgb(0 0 0 / 0.35);
+
+  /* --- タッチ領域 --------------------------------------------------------
+   * WCAG 2.5.5 の下限は 44px。小学生の指と Apple Pencil を想定して 64px。
+   * -------------------------------------------------------------------- */
+  --tap-min: 64px;
+
+  /* --- アニメーション ---------------------------------------------------- */
+  --dur-fast:   140ms;
+  --dur:        260ms;
+  --dur-slow:   600ms;
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================================
+ * 色覚多様性モード（設定画面で <html data-cvd="on"> が付く）
+ * ----------------------------------------------------------------------------
+ * 赤緑の対比を避け、青―黄―赤紫の軸に寄せる。加えて判定は必ず形と文字を併記
+ * しているため、このモードを使わなくても意味は伝わる。
+ * ==========================================================================*/
+html[data-cvd="on"] {
+  --c-judge-maru:    #38bdf8;  /* 青 */
+  --c-judge-sankaku: #fde047;  /* 黄 */
+  --c-judge-batsu:   #e879f9;  /* 赤紫 */
+
+  --c-hp:            #38bdf8;
+  --c-hp-low:        #e879f9;
+  --c-enemy-hp:      #fde047;
+
+  --c-region-hokkaido: #a5f3fc;
+  --c-region-tohoku:   #7dd3fc;
+  --c-region-kanto:    #fde047;
+  --c-region-chubu:    #c4b5fd;
+  --c-region-kinki:    #f0abfc;
+  --c-region-chugoku:  #bae6fd;
+  --c-region-shikoku:  #fed7aa;
+  --c-region-kyushu:   #e879f9;
+  --c-region-okinawa:  #99f6e4;
+}
+
+/* 文字サイズ設定（設定画面で <html data-font="small|normal|large"> が付く） */
+html[data-font="small"]  { --font-scale: 0.9;  }
+html[data-font="normal"] { --font-scale: 1;    }
+html[data-font="large"]  { --font-scale: 1.25; }
+
+/* OS 側で「視差効果を減らす」が有効なら演出を止める（前庭障害への配慮） */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 1ms;
+    --dur:      1ms;
+    --dur-slow: 1ms;
+  }
+}

@@ -1,0 +1,699 @@
+/* ============================================================================
+ * screens.css ― 各画面のレイアウト
+ * ==========================================================================*/
+
+/* --------------------------------------------------------------------------
+ * タイトル画面
+ * ------------------------------------------------------------------------ */
+.title-screen {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-6);
+  /* 夜空に日本列島が浮かぶイメージ */
+  background:
+    radial-gradient(ellipse at 70% 20%, rgb(120 160 255 / 0.18), transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgb(255 204 51 / 0.12), transparent 55%),
+    var(--c-bg);
+}
+
+.title-screen__brand { text-align: center; }
+
+.title-screen__logo {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-3xl);
+  letter-spacing: 0.06em;
+  color: var(--c-accent);
+  text-shadow: 0 3px 0 var(--c-accent-dark), 0 6px 18px rgb(255 204 51 / 0.35);
+}
+.title-screen__tagline {
+  font-size: var(--fs-base);
+  color: var(--c-text-dim);
+}
+
+.title-screen__menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: 380px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* タイトルの背景で回る日本地図 */
+.title-screen__map {
+  height: min(60dvh, 460px);
+  opacity: 0.9;
+  filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.5));
+}
+
+.title-screen__save-info {
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+  text-align: center;
+}
+
+/* 縦画面・スマホでは1カラムに折り返す */
+@media (max-width: 780px), (orientation: portrait) {
+  .title-screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    gap: var(--sp-4);
+    padding: var(--sp-4);
+  }
+  .title-screen__map { height: min(34dvh, 300px); }
+}
+
+/* --------------------------------------------------------------------------
+ * モード選択画面
+ * ------------------------------------------------------------------------ */
+.mode-screen__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+}
+
+.mode-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+}
+
+/* 学習モードを選ぶ大きなカード */
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  text-align: left;
+  min-height: 150px;
+  color: var(--c-text);
+  background: linear-gradient(180deg, var(--c-surface-2), var(--c-surface));
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.mode-card:active { transform: translateY(4px); }
+.mode-card[aria-pressed="true"] {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 4px rgb(255 204 51 / 0.3), var(--shadow-panel);
+}
+.mode-card__num {
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  color: var(--c-text-on-light);
+  background: var(--c-accent);
+  border-radius: 999px;
+  padding: 0 var(--sp-3);
+}
+.mode-card__title { font-size: var(--fs-lg); font-weight: 900; margin: 0; }
+.mode-card__desc  { font-size: var(--fs-sm); color: var(--c-text-dim); margin: 0; }
+
+/* 難易度などのオプション行 */
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.option-group__label {
+  min-width: 8em;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-text-dim);
+}
+
+/* トグルボタン（選択中は金色） */
+.toggle {
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-4);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: 2px solid var(--c-border);
+  border-radius: 999px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.toggle[aria-pressed="true"] {
+  color: var(--c-text-on-light);
+  background: var(--c-accent);
+  border-color: var(--c-accent-dark);
+}
+
+.mode-screen__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-top: var(--border-w) solid var(--c-border);
+  background: var(--c-bg-deep);
+}
+/* 左利き設定のときはボタンを左に寄せる */
+html[data-hand="left"] .mode-screen__footer { justify-content: flex-start; }
+
+/* --------------------------------------------------------------------------
+ * 地図を主役にする画面（冒険マップ）
+ * ------------------------------------------------------------------------ */
+.map-screen__body {
+  flex: 1;
+  min-height: 0;          /* flex 子要素が縮めるようにする */
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+.map-screen__stage {
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #1d3157, var(--c-bg-deep));
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  color: var(--c-text-dim);   /* 沖縄の点線枠が currentColor を使う */
+  overflow: hidden;
+}
+.map-screen__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  overflow-y: auto;
+}
+
+@media (max-width: 900px), (orientation: portrait) {
+  .map-screen__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .map-screen__side { flex-direction: row; flex-wrap: wrap; }
+}
+
+/* 冒険マップの「いま挑戦中の敵」カード */
+.quest-enemy {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.quest-enemy > div { min-width: 0; }
+
+/* 地方ごとの進行率リスト */
+.region-progress { display: flex; flex-direction: column; gap: var(--sp-2); }
+.region-progress__row {
+  display: grid;
+  grid-template-columns: 5.5em 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.region-progress__name { font-weight: 700; }
+.region-progress__count { color: var(--c-text-dim); font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------------------------------
+ * 問題画面
+ *   上段に地図（どこを答えるのか）、下段に手書き欄という2段構成。
+ *   iPad を横に置いたとき、手書き欄が手前（下）に来るようにしている。
+ * ------------------------------------------------------------------------ */
+.quiz-screen__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 38%) 1fr;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+/* 左列は「戦闘」と「地図」を縦に積む */
+.quiz-screen__left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.quiz-screen__map {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #1d3157, var(--c-bg-deep));
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  color: var(--c-text-dim);
+  overflow: hidden;
+}
+
+.quiz-screen__work {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.quiz-screen__question {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+}
+
+.quiz-screen__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+/* 左利き設定では、主要ボタンを左側に寄せる */
+html[data-hand="left"] .quiz-screen__tools { flex-direction: row-reverse; }
+
+.quiz-screen__submit { margin-inline-start: auto; }
+html[data-hand="left"] .quiz-screen__submit { margin-inline: 0 auto; }
+
+.quiz-screen__notes { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* 残り時間 */
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  font-size: var(--fs-lg);
+  color: var(--c-text-dim);
+}
+.timer.is-urgent { color: var(--c-judge-batsu); animation: timer-blink 1s steps(2) infinite; }
+@keyframes timer-blink { 50% { opacity: 0.35; } }
+
+@media (max-width: 900px), (orientation: portrait) {
+  .quiz-screen__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(140px, 30dvh) 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * 戦闘（問題画面の地図の上に置く）
+ * ------------------------------------------------------------------------ */
+.battle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: linear-gradient(180deg, #2a1f3d, #1a1430);
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  flex: 0 0 auto;
+}
+.battle__stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+}
+.battle__art { display: block; }
+
+/* ボスはゆらゆらさせて「格が違う」ことを動きでも伝える */
+.enemy-art--boss,
+.enemy-art--final {
+  animation: enemy-float 2.6s ease-in-out infinite;
+}
+@keyframes enemy-float {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-8px) rotate(1.5deg); }
+}
+
+.battle__meters { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.battle__name {
+  font-size: var(--fs-lg);
+  font-weight: 900;
+  color: var(--c-enemy-hp);
+}
+.battle__player { display: flex; flex-direction: column; gap: 2px; }
+.battle__player-name { font-size: var(--fs-xs); color: var(--c-text-dim); }
+
+/* ダメージ数値が浮き上がる場所 */
+.battle__pop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+.battle__pop-item {
+  position: absolute;
+  font-size: var(--fs-xl);
+  font-weight: 900;
+  text-shadow: 0 2px 6px rgb(0 0 0 / 0.8);
+  white-space: nowrap;
+}
+.battle__pop--damage  { color: var(--c-accent); }
+.battle__pop--counter { color: var(--c-judge-batsu); font-size: var(--fs-lg); }
+
+@media (max-width: 900px), (orientation: portrait) {
+  .battle__stage { width: 96px; height: 96px; }
+  .battle__stage svg { width: 96px; height: 96px; }
+}
+
+/* 撃破・地方制覇のお知らせ */
+.battle-banner {
+  padding: var(--sp-3) var(--sp-5);
+  font-size: var(--fs-lg);
+  font-weight: 900;
+  text-align: center;
+  color: var(--c-text-on-light);
+  background: linear-gradient(90deg, #fda4af, #f472b6, #fda4af);
+  border-radius: var(--radius);
+  animation: levelup-pop var(--dur-slow) var(--ease-bounce) both;
+}
+.battle-banner--region {
+  background: linear-gradient(90deg, #86efac, #4ade80, #86efac);
+}
+.battle-banner--down {
+  color: var(--c-text);
+  background: linear-gradient(90deg, #475569, #64748b, #475569);
+}
+
+/* 全国制覇の演出 */
+.victory-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background:
+    radial-gradient(ellipse at 50% 40%, rgb(255 204 51 / 0.25), transparent 60%),
+    rgb(9 15 30 / 0.96);
+  text-align: center;
+  overflow-y: auto;
+}
+.victory-layer h1 { animation: levelup-pop 900ms var(--ease-bounce) both; }
+
+/* --------------------------------------------------------------------------
+ * 結果（問題画面の上に全画面でかぶせる）
+ * ------------------------------------------------------------------------ */
+.result-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  background: rgb(9 15 30 / 0.92);
+  animation: fade-in var(--dur) var(--ease-out) both;
+  overflow-y: auto;
+}
+.result-card {
+  width: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+}
+.result-card__answer {
+  font-size: var(--fs-2xl);
+  font-weight: 900;
+  color: var(--c-accent);
+  font-family: var(--ff-kyokasho);
+}
+.result-card__reading { font-size: var(--fs-base); color: var(--c-text-dim); }
+.result-card__message { font-size: var(--fs-lg); }
+
+.result-card__exp {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.exp-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+}
+.exp-gain {
+  font-size: var(--fs-xl);
+  font-weight: 900;
+  color: var(--c-exp);
+}
+.result-card__actions {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* 次に出てくる敵の予告 */
+.result-next-enemy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+  background: var(--c-bg-deep);
+  border-radius: var(--radius);
+  animation: hint-in var(--dur) var(--ease-out) both;
+}
+
+/* レベルアップの帯 */
+.levelup-banner {
+  padding: var(--sp-3) var(--sp-5);
+  font-size: var(--fs-xl);
+  font-weight: 900;
+  color: var(--c-text-on-light);
+  background: linear-gradient(90deg, #ffe08a, var(--c-accent), #ffe08a);
+  border-radius: var(--radius);
+  animation: levelup-pop var(--dur-slow) var(--ease-bounce) both;
+}
+@keyframes levelup-pop {
+  0%   { transform: scale(0.6) rotate(-4deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* 自己確認（認識に自信がないとき／自己採点モード） */
+.selfcheck { width: 100%; display: flex; flex-direction: column; gap: var(--sp-4); }
+.selfcheck__choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-3);
+}
+.selfcheck__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-2);
+  min-height: 120px;
+  font-family: inherit;
+  font-weight: 900;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: var(--border-w) solid currentColor;
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.selfcheck__btn .mark { font-size: 3rem; line-height: 1; }
+.selfcheck__btn .caption { font-size: var(--fs-sm); color: var(--c-text-dim); }
+.selfcheck__btn:active { transform: translateY(3px); }
+.selfcheck__btn--maru    { color: var(--c-judge-maru); }
+.selfcheck__btn--sankaku { color: var(--c-judge-sankaku); }
+.selfcheck__btn--batsu   { color: var(--c-judge-batsu); }
+
+/* --------------------------------------------------------------------------
+ * 図鑑
+ * ------------------------------------------------------------------------ */
+.dex-screen__body,
+.records-screen__body,
+.settings-screen__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+}
+
+.dex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: var(--sp-3);
+}
+
+.dex-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  min-height: 132px;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--c-text);
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.dex-card:active { transform: translateY(3px); }
+.dex-card.is-locked { opacity: 0.65; }
+.dex-card.is-unlocked { border-color: var(--c-accent); }
+.dex-card__shape { width: 100%; height: 74px; }
+.dex-card__name { text-align: center; }
+.dex-card__badge {
+  position: absolute;
+  top: 4px; right: 6px;
+  color: var(--c-accent);
+  font-size: var(--fs-base);
+}
+
+.dex-detail__head {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.dex-detail__head svg { width: 96px; height: 96px; }
+
+.dex-detail__list { margin: 0 0 var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
+.dex-detail__row {
+  display: grid;
+  grid-template-columns: 8em 1fr;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--c-border);
+}
+.dex-detail__row dt { font-size: var(--fs-sm); color: var(--c-text-dim); font-weight: 700; }
+.dex-detail__row dd { margin: 0; }
+.dex-locked { color: var(--c-text-dim); font-size: var(--fs-sm); }
+
+/* モーダルを載せる場所（中身が入るまで場所を取らない） */
+.overlay-slot:empty { display: none; }
+.overlay-slot { position: absolute; inset: 0; z-index: 50; }
+
+/* --------------------------------------------------------------------------
+ * きろく
+ * ------------------------------------------------------------------------ */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--sp-3);
+}
+.stat-card {
+  padding: var(--sp-3);
+  text-align: center;
+  background: var(--c-surface);
+  border: var(--border-w) solid var(--c-border);
+  border-radius: var(--radius);
+}
+.stat-card__value { font-size: var(--fs-xl); font-weight: 900; color: var(--c-accent); }
+.stat-card__label { font-size: var(--fs-sm); color: var(--c-text-dim); }
+
+.records-screen__map { height: min(50dvh, 420px); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+}
+.legend__item { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.legend__swatch {
+  width: 18px; height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--c-bg-deep);
+}
+
+.weak-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.weak-list__row {
+  display: grid;
+  grid-template-columns: 7em 1fr 7em;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+}
+.weak-list__name { font-weight: 700; }
+.weak-list__note { color: var(--c-text-dim); text-align: right; }
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 4px;
+}
+.calendar__day {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  font-size: var(--fs-xs);
+  color: var(--c-text-dim);
+  background: var(--c-bg-deep);
+  border-radius: 6px;
+}
+.calendar__day.is-studied {
+  color: var(--c-text-on-light);
+  background: var(--c-accent);
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+ * 設定
+ * ------------------------------------------------------------------------ */
+.settings-note {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-text-dim);
+}
+.text-input {
+  min-height: var(--tap-min);
+  padding: var(--sp-2) var(--sp-3);
+  font-family: inherit;
+  font-size: var(--fs-base);
+  color: var(--c-text);
+  background: var(--c-bg-deep);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  max-width: 18em;
+}
+
+/* --------------------------------------------------------------------------
+ * ローディング／エラー表示
+ * ------------------------------------------------------------------------ */
+.boot-message {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--c-text-dim);
+}
+.boot-message__detail {
+  max-width: 40em;
+  font-size: var(--fs-sm);
+  text-align: left;
+  white-space: pre-wrap;
+  color: var(--c-judge-sankaku);
+}

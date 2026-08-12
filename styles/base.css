@@ -1,0 +1,115 @@
+/* ============================================================================
+ * base.css ― リセット・タイポグラフィ・アクセシビリティの土台
+ * ==========================================================================*/
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* iOS Safari のバウンススクロールを止め、ゲーム画面が動かないようにする */
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--ff-base);
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  /* 長押しで出る iOS のテキスト選択・コールアウトを抑制（誤操作防止） */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* 画面全体の器。dvh を使うと Safari の URL バー出入りで高さが破綻しない */
+#app {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  /* ノッチ／ホームインジケータを避ける */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow: hidden;
+}
+
+.screen-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.overlay-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;   /* 中身が出たときだけ auto に戻す */
+  z-index: 100;
+}
+.overlay-root:not(:empty) { pointer-events: auto; }
+
+/* --- 見出し ---------------------------------------------------------------- */
+h1, h2, h3 {
+  margin: 0 0 var(--sp-3);
+  line-height: 1.3;
+  font-weight: 800;
+}
+h1 { font-size: var(--fs-3xl); color: var(--c-accent); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+p  { margin: 0 0 var(--sp-3); }
+
+/* --- ふりがな --------------------------------------------------------------
+ * ruby は 4年生にとっての生命線。設定 OFF のときだけ rt を隠す。
+ * ------------------------------------------------------------------------ */
+ruby { ruby-position: over; }
+rt {
+  font-size: 0.5em;
+  color: var(--c-text-dim);
+  font-weight: 400;
+}
+html[data-furigana="off"] rt { display: none; }
+
+/* --- フォーカス表示 --------------------------------------------------------
+ * キーボード操作でも必ず現在位置が分かるようにする（WCAG 2.4.7）。
+ * :focus-visible なのでタップ時には出ない。
+ * ------------------------------------------------------------------------ */
+:focus { outline: none; }
+:focus-visible {
+  outline: 4px solid var(--c-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* --- スクリーンリーダー専用テキスト ---------------------------------------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --- 画面遷移のフェード ---------------------------------------------------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  animation: screen-in var(--dur) var(--ease-out) both;
+}
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* スクロールが必要な画面のみに付ける（既定はスクロールさせない） */
+.scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
