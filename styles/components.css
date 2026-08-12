@@ -247,9 +247,20 @@
 .pad {
   position: relative;
   width: 100%;
+
   /* 6マスが正方形に近くなる比率。高さは幅から自動で決まる */
   aspect-ratio: 6 / 1.15;
   max-height: 34dvh;
+
+  /* ── ここは絶対に縮ませない ─────────────────────────────
+   * 手書き欄はこの教材でいちばん大事な部分。
+   * flex の中では既定で縮むため、画面が狭いと高さ0まで潰れて
+   * 「答えを書く場所が消える」という事故が起きる（実際に起きた）。
+   * flex-shrink を止め、下限も決めておく。
+   * -------------------------------------------------------- */
+  flex: 0 0 auto;
+  min-height: 96px;
+
   border: var(--border-w) solid var(--c-border);
   border-radius: var(--radius);
   overflow: hidden;

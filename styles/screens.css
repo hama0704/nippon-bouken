@@ -295,11 +295,67 @@ html[data-hand="left"] .quiz-screen__submit { margin-inline: 0 auto; }
 .timer.is-urgent { color: var(--c-judge-batsu); animation: timer-blink 1s steps(2) infinite; }
 @keyframes timer-blink { 50% { opacity: 0.35; } }
 
-@media (max-width: 900px), (orientation: portrait) {
+/* --------------------------------------------------------------------------
+ * 問題画面：縦長・狭い画面（iPad縦向き・スマホ）
+ *
+ * ■ ここで守りたいもの
+ *   この画面に絶対必要なのは「地図（どこを答えるのか）」と「手書き欄」の2つ。
+ *   狭い画面ではこの2つを優先して確保し、
+ *   問題文やボタンのほうを小さくする。
+ *
+ *   以前は逆になっていた。問題文が32pxで3行に折り返し、ボタンが3行に折り返し、
+ *   その結果、地図が12px・手書き欄が0pxまで潰れて答えが書けなくなっていた。
+ * ------------------------------------------------------------------------ */
+/* --------------------------------------------------------------------------
+ * 問題画面：小さい横画面（スマホを横にしたとき・小型タブレット）
+ *
+ * ■ 縦に積み替えない
+ *   画面が狭いときに1カラムへ積み替えると、高さが足りずに
+ *   手書き欄と「こたえる」が画面の外へ出てしまう。
+ *   このゲームは横画面専用（縦のときは持ち替えの案内を出す）なので、
+ *   左に地図・右に手書き欄という2カラムのまま、中身を小さくして収める。
+ *
+ * ■ 守る優先順位
+ *   手書き欄 ＞ 地図 ＞ 問題文・ボタン
+ *   問題文とボタンは小さくしてよい。読めて押せれば役目は足りる。
+ * ------------------------------------------------------------------------ */
+@media (max-width: 900px), (max-height: 560px) {
   .quiz-screen__body {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(140px, 30dvh) 1fr;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    /* 万一入りきらない端末でも、切り落とさずに届くようにする。
+       手書き欄は touch-action:none なので、書いている最中に画面は動かない */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
+
+  /* 問題文は小さくしてよい */
+  .quiz-screen__question {
+    font-size: var(--fs-lg);
+    gap: var(--sp-2);
+  }
+
+  /* ボタンが3行に折り返して高さを食っていたので詰める */
+  .quiz-screen__tools .btn {
+    min-height: 52px;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-sm);
+  }
+  .quiz-screen__tools .btn--lg {
+    min-height: 52px;
+    padding: var(--sp-2) var(--sp-4);
+    font-size: var(--fs-base);
+  }
+
+  /* ヒント欄は余った高さぶんだけ使う（無ければ0でよい） */
+  .quiz-screen__notes { flex: 1 1 auto; }
+}
+
+/* 高さが特に足りない横画面（スマホ横）では、地図と敵をさらに小さく */
+@media (max-height: 480px) {
+  .quiz-screen__map { min-height: 110px; }
+  .pad { max-height: 40dvh; }
+  .quiz-screen__question { font-size: var(--fs-base); }
 }
 
 /* --------------------------------------------------------------------------
@@ -362,9 +418,19 @@ html[data-hand="left"] .quiz-screen__submit { margin-inline: 0 auto; }
 .battle__pop--damage  { color: var(--c-accent); }
 .battle__pop--counter { color: var(--c-judge-batsu); font-size: var(--fs-lg); }
 
-@media (max-width: 900px), (orientation: portrait) {
-  .battle__stage { width: 96px; height: 96px; }
-  .battle__stage svg { width: 96px; height: 96px; }
+/* 小さい画面では戦闘表示を薄くして、地図と手書き欄に高さをゆずる */
+@media (max-width: 900px), (max-height: 560px) {
+  .battle { padding: var(--sp-2); gap: var(--sp-2); }
+  .battle__stage { width: 84px; height: 84px; }
+  .battle__stage svg { width: 84px; height: 84px; }
+  .battle__name { font-size: var(--fs-base); }
+  .battle .bar { height: 18px; }
+}
+
+@media (max-height: 480px) {
+  .battle__stage { width: 60px; height: 60px; }
+  .battle__stage svg { width: 60px; height: 60px; }
+  .battle__name { font-size: var(--fs-sm); }
 }
 
 /* 撃破・地方制覇のお知らせ */

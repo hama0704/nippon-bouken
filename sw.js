@@ -1,18 +1,19 @@
 /**
  * sw.js ― Service Worker。オフラインで遊べるようにする。
  *
- * ■ 方針: キャッシュ優先（cache first）
- *   この教材は内容が動的に変わらないので、
- *   一度取り込んだファイルはネットワークを見ずにキャッシュから返す。
+ * ■ 方針: まずキャッシュを返し、裏で新しくする
+ *   一度取り込んだファイルはキャッシュから即座に返す。
  *   校内Wi-Fiが不安定でも、機内モードでも、同じ速さで動く。
+ *   同時に裏でネットワークからも取り直すので、
+ *   ファイルを直して公開すれば、次に開いたときに自動で新しくなる。
  *
  * ■ 更新のしかた
- *   ファイルを直したら、下の CACHE_VERSION の数字を1つ上げる。
- *   これを忘れると、児童の端末に古い版が residual として残り続ける。
+ *   push するだけでよい。児童の端末は次の起動で新しい版になる。
+ *   下の CACHE_VERSION は、消したファイルを一掃したいときだけ上げる。
  *   （詳しくは docs/PWA.md）
  */
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `nippon-bouken-${CACHE_VERSION}`;
 
 /**
@@ -118,8 +119,20 @@ self.addEventListener("activate", (event) => {
 
 /**
  * 取り出し。
- * キャッシュにあればそれを返し、無ければネットワークへ。
- * 取れたものは次回のためにキャッシュへ入れておく。
+ *
+ * ■ 「すぐ返す」と「新しくする」を両立させる
+ *   キャッシュにあればまずそれを返す（速い・オフラインでも動く）。
+ *   同時に、裏でネットワークからも取り直してキャッシュを更新しておく。
+ *   こうすると、次にアプリを開いたときには自動で新しい版になる。
+ *
+ * ■ なぜこうしたか
+ *   以前は「キャッシュにあれば返して終わり」だったため、
+ *   CACHE_VERSION を上げ忘れると児童の端末が古い版のまま固定された。
+ *   先生の端末では直って見えるのに教室では直らない、という
+ *   いちばん原因を探しにくい状態になる。
+ *   人が毎回忘れずに数字を上げる、という前提に頼るのをやめた。
+ *
+ *   （CACHE_VERSION は今も有効。消したファイルを一掃したいときに上げる）
  */
 self.addEventListener("fetch", (event) => {
   const request = event.request;
@@ -130,23 +143,36 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith((async () => {
     const cached = await caches.match(request, { ignoreSearch: false });
-    if (cached) return cached;
 
-    try {
-      const response = await fetch(request);
-      if (response.ok) {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(request, response.clone());
-      }
-      return response;
-    } catch (error) {
-      // オフラインで未キャッシュのものを求められた場合。
-      // 画面遷移の要求なら、せめてトップページを返す。
-      if (request.mode === "navigate") {
-        const fallback = await caches.match("./index.html");
-        if (fallback) return fallback;
-      }
-      throw error;
+    // 裏での取り直し。失敗しても表示には影響させない（オフラインが正常系）
+    const refresh = fetch(request)
+      .then(async (response) => {
+        if (response.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put(request, response.clone());
+        }
+        return response;
+      })
+      .catch(() => null);
+
+    if (cached) {
+      // 待たずに返す。更新は次回の起動から反映される
+      event.waitUntil(refresh);
+      return cached;
     }
+
+    const response = await refresh;
+    if (response) return response;
+
+    // オフラインで、まだキャッシュにも無いものを求められた場合。
+    // 画面遷移の要求なら、せめてトップページを返す。
+    if (request.mode === "navigate") {
+      const fallback = await caches.match("./index.html");
+      if (fallback) return fallback;
+    }
+    return new Response("オフラインのため読み込めませんでした", {
+      status: 503,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   })());
 });

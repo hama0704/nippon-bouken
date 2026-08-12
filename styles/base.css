@@ -113,3 +113,58 @@ html[data-furigana="off"] rt { display: none; }
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+
+/* ============================================================================
+ * 横画面のおねがい
+ * ----------------------------------------------------------------------------
+ * このゲームは横画面専用。手書き欄に6マス並べる必要があり、
+ * 縦画面では1マスが小さくなりすぎて漢字が書けないため。
+ *
+ * 縦のときは中身を隠し、持ち替えの案内だけを出す。
+ * 中途半端に縦でも遊べるようにするより、
+ * 「よこむきにする」という1つのきまりにしたほうが子どもは迷わない。
+ * ==========================================================================*/
+#rotate-hint { display: none; }
+
+@media (orientation: portrait) {
+  #app { display: none; }
+
+  #rotate-hint {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-4);
+    padding: var(--sp-6);
+    text-align: center;
+    color: var(--c-accent);
+    background:
+      radial-gradient(ellipse at 50% 40%, rgb(120 160 255 / 0.18), transparent 60%),
+      var(--c-bg);
+    z-index: 999;
+  }
+
+  #rotate-hint svg {
+    animation: rotate-hint-turn 2.6s ease-in-out infinite;
+  }
+
+  .rotate-hint__title {
+    margin: 0;
+    font-size: var(--fs-xl);
+    font-weight: 800;
+  }
+  .rotate-hint__note {
+    margin: 0;
+    max-width: 20em;
+    font-size: var(--fs-base);
+    color: var(--c-text-dim);
+  }
+}
+
+/* 端末を回す動きをそのまま見せる。回し方が言葉より早く伝わる */
+@keyframes rotate-hint-turn {
+  0%, 45%   { transform: rotate(0deg); }
+  70%, 100% { transform: rotate(-90deg); }
+}
