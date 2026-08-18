@@ -116,6 +116,31 @@ describe("scoring ― ○△×のきまり", () => {
 
   it("「県」は付いていてもいなくても ○", () => {
     expect(judgeAnswer("埼玉県", saitama).judge).toBe(Judge.MARU);
+    expect(judgeAnswer("埼玉", saitama).judge).toBe(Judge.MARU);
+  });
+
+  it("「県」まで書けたかを見分ける（ボーナスの判定に使う）", () => {
+    expect(judgeAnswer("埼玉県", saitama).wroteSuffix).toBeTruthy();
+    expect(judgeAnswer("埼玉", saitama).wroteSuffix).toBeFalsy();
+    expect(judgeAnswer("さいたまけん", saitama).wroteSuffix).toBeTruthy();
+    expect(judgeAnswer("さいたま", saitama).wroteSuffix).toBeFalsy();
+  });
+
+  it("接尾辞が無い北海道は、いつでも「最後まで書けた」扱い", () => {
+    expect(judgeAnswer("北海道", hokkaido).wroteSuffix).toBeTruthy();
+  });
+
+  it("「県」なしのときは、書くようにうながす言葉を返す", () => {
+    expect(judgeAnswer("埼玉", saitama).message).toContain("埼玉県");
+  });
+
+  it("先生が「書かないと△」に設定すると、県なしは △ になる", () => {
+    const strict = { requireSuffix: true };
+    expect(judgeAnswer("埼玉県", saitama, strict).judge).toBe(Judge.MARU);
+    expect(judgeAnswer("埼玉", saitama, strict).judge).toBe(Judge.SANKAKU);
+    expect(judgeAnswer("埼玉", saitama, strict).reason).toBe("no-suffix");
+    // 接尾辞が無い北海道は、この設定でも○のまま
+    expect(judgeAnswer("北海道", hokkaido, strict).judge).toBe(Judge.MARU);
   });
 
   it("ひらがなは △", () => {
@@ -239,6 +264,19 @@ describe("progress ― 経験値のきまり", () => {
     const result = calculateExp({ judge: Judge.MARU, before });
     expect(result.overcame).toBeTruthy();
     expect(result.exp).toBe(EXP_TABLE.comeback + 4 * 20);
+  });
+
+  it("「県」まで書けるとボーナスがつく", () => {
+    const plain = calculateExp({ judge: Judge.MARU, before: fresh });
+    const full  = calculateExp({ judge: Judge.MARU, before: fresh, wroteSuffix: true, suffix: "県" });
+    expect(full.exp).toBe(plain.exp + 20);
+    expect(full.reasons.some((r) => r.includes("「県」まで書けた"))).toBeTruthy();
+  });
+
+  it("接尾辞が無い答えではボーナスが発生しない（北海道で得しない）", () => {
+    const plain = calculateExp({ judge: Judge.MARU, before: fresh });
+    const full  = calculateExp({ judge: Judge.MARU, before: fresh, wroteSuffix: true, suffix: "" });
+    expect(full.exp).toBe(plain.exp);
   });
 
   it("ヒントを使うと減る", () => {

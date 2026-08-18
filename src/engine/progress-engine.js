@@ -41,6 +41,18 @@ const OVERCOME_BONUS_MAX = 120;
 /** ボーナスがつきはじめる「間違えた回数」 */
 const OVERCOME_MISS_THRESHOLD = 2;
 
+/**
+ * 「◯◯県」と最後まで書けたときのボーナス。
+ *
+ * ■ なぜ罰ではなく報酬にするか
+ *   「県」を書かないと×、にすると、書き方が不安で手が止まる子が出る。
+ *   覚えていないのではなく「書き方のきまり」で減点されるのは、
+ *   学習の妨げにしかならない。
+ *   正解は正解として認めたうえで、最後まで書けたらもっと嬉しい、
+ *   という形にして習慣づける。
+ */
+const SUFFIX_BONUS = 20;
+
 /** レベルアップに必要な経験値（レベル n → n+1） */
 export function expToNextLevel(level) {
   return 120 + (level - 1) * 80;
@@ -65,7 +77,10 @@ const GROWTH = { maxHp: 6, atk: 3, def: 2, spd: 2 };
  * @returns {{ exp:number, reasons:string[], leveledUp:boolean, level:number,
  *             gainedStats:object|null, overcame:boolean }}
  */
-export function applyAnswer({ store, question, judge, hintLevel = 0, elapsedMs = 0, now = Date.now() }) {
+export function applyAnswer({
+  store, question, judge, hintLevel = 0, elapsedMs = 0,
+  wroteSuffix = false, now = Date.now(),
+}) {
   const record = store.progressOf(question.subjectId);
   const isCapital = question.part === "capital";
 
@@ -77,7 +92,11 @@ export function applyAnswer({ store, question, judge, hintLevel = 0, elapsedMs =
     lastJudge: record.lastJudge,
   };
 
-  const { exp, reasons, overcame } = calculateExp({ judge, hintLevel, before });
+  const { exp, reasons, overcame } = calculateExp({
+    judge, hintLevel, before,
+    wroteSuffix,
+    suffix: question.answer?.suffix ?? "",
+  });
 
   let leveledUp = false;
   let gainedStats = null;
@@ -149,7 +168,7 @@ export function applyAnswer({ store, question, judge, hintLevel = 0, elapsedMs =
  * 経験値の内訳を計算する（状態は変えない）。
  * 画面に「なぜこの経験値になったか」を出せるよう、理由も返す。
  */
-export function calculateExp({ judge, hintLevel = 0, before }) {
+export function calculateExp({ judge, hintLevel = 0, before, wroteSuffix = false, suffix = "" }) {
   if (judge === Judge.BATSU) {
     return { exp: 0, reasons: ["まちがえた（つぎに正解すると 120けいけんち！）"], overcame: false };
   }
@@ -180,6 +199,13 @@ export function calculateExp({ judge, hintLevel = 0, before }) {
   if (overcame) {
     bonus = Math.min(OVERCOME_BONUS_MAX, before.wrong * OVERCOME_BONUS_PER_MISS);
     reasons.push(`にがて克服ボーナス +${bonus}（${before.wrong}回まちがえた県）`);
+  }
+
+  // 「◯◯県」と最後まで書けたボーナス。
+  // 接尾辞が無い答え（北海道・東京の都庁所在地）ではボーナス自体が発生しない
+  if (wroteSuffix && suffix) {
+    bonus += SUFFIX_BONUS;
+    reasons.push(`「${suffix}」まで書けたボーナス +${SUFFIX_BONUS}`);
   }
 
   // ヒントぶんの減点

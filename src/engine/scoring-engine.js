@@ -45,7 +45,10 @@ export const JUDGE_VIEW = Object.freeze({
  * @param {object} [context]
  * @param {(text:string) => object|null} [context.findOther]
  *        入力が別の対象（別の県）と一致するか調べる関数。あれば具体的に指摘できる
- * @returns {{ judge:string, reason:string, message:string }}
+ * @param {boolean} [context.requireSuffix]
+ *        true にすると「県」まで書かないと○にしない（先生の設定）
+ * @returns {{ judge:string, reason:string, message:string, wroteSuffix:boolean }}
+ *        wroteSuffix … 「県」まで書けたか。経験値のボーナスに使う
  */
 export function judgeAnswer(inputText, answer, context = {}) {
   const input = normalize(inputText);
@@ -57,19 +60,41 @@ export function judgeAnswer(inputText, answer, context = {}) {
   // 入力の末尾から接尾辞を推測して削る、というやり方はしない
   // （「京都」の「都」まで削れてしまうため。kana.js のコメント参照）
   const forms = acceptedForms(answer);
+  const suffix = answer.suffix ?? "";
+  // 「県」まで書いた形。接尾辞が無い答え（北海道）は短い形がそのまま完全形
+  const fullKanji = suffix ? forms.kanji[1] : forms.kanji[0];
+  const fullKana  = forms.kana[forms.kana.length - 1];
 
-  // --- ○: 漢字表記が一致（「県」の有無は問わない）-------------------------
+  // --- ○: 「県」まで書けた（いちばん良い書き方）---------------------------
+  if (input === fullKanji) {
+    return result(Judge.MARU, "kanji",
+      suffix ? `かんぺき！「${suffix}」まで書けたね。` : "かんぺき！かんじで書けたね。",
+      { wroteSuffix: true });
+  }
+
+  // --- 漢字は合っているが「県」が無い -------------------------------------
   if (forms.kanji.includes(input)) {
-    return result(Judge.MARU, "kanji", "かんぺき！かんじで書けたね。");
+    // 先生が「県まで必ず書く」に設定しているときは、あと一歩として△にする
+    if (context.requireSuffix && suffix) {
+      return result(Judge.SANKAKU, "no-suffix",
+        `おしい！「${fullKanji}」と、「${suffix}」まで書こう。`, { wroteSuffix: false });
+    }
+    return result(Judge.MARU, "kanji",
+      suffix ? `せいかい！「${fullKanji}」と 書けると もっといいよ。` : "かんぺき！",
+      { wroteSuffix: false });
   }
 
   // --- 読みが一致（ひらがな・カタカナで書いた）-----------------------------
-  if (forms.kana.includes(toHiragana(input))) {
+  const inputKana = toHiragana(input);
+  if (forms.kana.includes(inputKana)) {
+    const wroteSuffix = inputKana === fullKana;
+
     // 答えそのものがひらがなの場合（さいたま市など）は○にする
     if (isAllHiragana(forms.kanji[0])) {
-      return result(Judge.MARU, "kanji", "かんぺき！");
+      return result(Judge.MARU, "kanji", "かんぺき！", { wroteSuffix });
     }
-    return result(Judge.SANKAKU, "kana", "よみは あっているよ。つぎは かんじで書いてみよう！");
+    return result(Judge.SANKAKU, "kana",
+      "よみは あっているよ。つぎは かんじで書いてみよう！", { wroteSuffix });
   }
 
   // --- 1文字だけちがう場合 -------------------------------------------------
@@ -108,8 +133,8 @@ export function isCorrect(judge) {
  * 内部
  * ------------------------------------------------------------------------- */
 
-function result(judge, reason, message) {
-  return { judge, reason, message };
+function result(judge, reason, message, extra = {}) {
+  return { judge, reason, message, wroteSuffix: false, ...extra };
 }
 
 /** 違っている1文字が、入力側ではひらがなになっているか */

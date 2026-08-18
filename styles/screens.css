@@ -556,7 +556,9 @@ html[data-hand="left"] .quiz-screen__submit { margin-inline: 0 auto; }
 .selfcheck { width: 100%; display: flex; flex-direction: column; gap: var(--sp-4); }
 .selfcheck__choices {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* 選択肢は3つのときも4つのときもある（「県」がある答えかどうか）。
+     文字が入る幅を確保しつつ、入らなければ折り返す */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--sp-3);
 }
 .selfcheck__btn {

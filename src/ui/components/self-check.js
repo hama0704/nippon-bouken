@@ -21,10 +21,11 @@ import { Judge } from "../../engine/scoring-engine.js";
  * @param {object} options.answer     { kanji, kana, suffix }
  * @param {string} [options.inkImage] 手書きの画像（data URL）
  * @param {string} [options.guess]    認識エンジンの推測（あれば参考に出す）
- * @param {(judge:string) => void} options.onChoose
+ * @param {boolean} [options.requireSuffix] 「県」まで書かないと○にしない設定か
+ * @param {(judge:string, wroteSuffix:boolean) => void} options.onChoose
  * @returns {HTMLElement}
  */
-export function SelfCheckPanel({ answer, inkImage, guess, onChoose }) {
+export function SelfCheckPanel({ answer, inkImage, guess, requireSuffix = false, onChoose }) {
   return el("div", { class: "selfcheck" },
     el("h2", {}, "こたえと 見くらべてみよう"),
 
@@ -47,12 +48,29 @@ export function SelfCheckPanel({ answer, inkImage, guess, onChoose }) {
     guess && el("p", { class: "result-card__reading" },
       `もしかして「${guess}」かな？ ちがっていたら 自分で えらんでね。`),
 
-    el("p", {}, "どうだったかな？"),
+    el("p", {}, "どこまで 書けたかな？"),
 
+    // ■ ボタンの文言に、実際の答えをそのまま入れる
+    //   「かんじで書けた」のような抽象的な言い方だと、
+    //   どこまでが合格なのか子どもには分からない。
+    //   「広島県」と書いてあれば、見くらべてそのまま選べる。
+    //
+    // ■ 「県まで書けた」と「県を忘れた」を分ける
+    //   機械が読んでいない自己採点でも、ボーナスを正しく出すため。
+    //   どちらも正解なので○のままにし、優劣は経験値の差で伝える。
     el("div", { class: "selfcheck__choices" },
-      choiceButton("maru", "○", "かんじで 書けた", Judge.MARU, onChoose),
-      choiceButton("sankaku", "△", "ひらがな・おしい", Judge.SANKAKU, onChoose),
-      choiceButton("batsu", "×", "まちがえた", Judge.BATSU, onChoose)
+      choiceButton("maru", "○", `「${answer.kanji}${answer.suffix}」と 書けた`,
+        Judge.MARU, true, onChoose),
+
+      // 接尾辞がある答えのときだけ「県を書き忘れた」の選択肢を出す
+      answer.suffix && choiceButton(
+        requireSuffix ? "sankaku" : "maru",
+        requireSuffix ? "△" : "○",
+        `「${answer.kanji}」まで（「${answer.suffix}」を書きわすれた）`,
+        requireSuffix ? Judge.SANKAKU : Judge.MARU, false, onChoose),
+
+      choiceButton("sankaku", "△", "ひらがなで 書いた", Judge.SANKAKU, false, onChoose),
+      choiceButton("batsu", "×", "まちがえた", Judge.BATSU, false, onChoose)
     ),
 
     el("p", { class: "result-card__reading" },
@@ -60,10 +78,13 @@ export function SelfCheckPanel({ answer, inkImage, guess, onChoose }) {
   );
 }
 
-function choiceButton(variant, mark, caption, judge, onChoose) {
+/**
+ * @param {boolean} wroteSuffix このボタンを選んだら「県まで書けた」とみなすか
+ */
+function choiceButton(variant, mark, caption, judge, wroteSuffix, onChoose) {
   return el("button", {
     class: `selfcheck__btn selfcheck__btn--${variant}`,
-    onClick: () => onChoose(judge),
+    onClick: () => onChoose(judge, wroteSuffix),
     "aria-label": `${mark} ${caption}`,
   },
     el("span", { class: "mark", "aria-hidden": "true" }, mark),

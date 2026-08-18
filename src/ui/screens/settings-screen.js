@@ -100,7 +100,15 @@ export function SettingsScreen({ store, router }) {
           store.settings.recognizer,
           (value) => set({ recognizer: value })),
         el("p", { class: "settings-note" },
-          "自動でうまく読めないときは、いつでも じぶんで丸つけできます。")
+          "自動でうまく読めないときは、いつでも じぶんで丸つけできます。"),
+
+        choiceRow("「県」「市」まで", [
+          { id: false, label: "書かなくても○" },
+          { id: true,  label: "書かないと△" },
+        ], store.settings.requireSuffix, (value) => set({ requireSuffix: value })),
+        el("p", { class: "settings-note" },
+          "どちらの設定でも、「◯◯県」と最後まで書けたときは ボーナスの経験値がつきます。" +
+          "まずは「書かなくても○」のまま、ほめて習慣づけるのがおすすめです。")
       ),
 
       el("div", { class: "panel" },

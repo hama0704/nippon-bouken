@@ -52,6 +52,7 @@ export function createDefaultSettings() {
     handedness: "right",   // right | left（ボタン配置を左右反転）
     recognizer: "stroke",  // 使用する文字認識エンジンの id
     reduceMotion: false,   // アニメを抑える（OS設定とは別に手動でも）
+    requireSuffix: false,  // 「県」まで書かないと○にしない（先生の方針で切り替える）
   };
 }
 

@@ -289,6 +289,7 @@ export function QuizScreen({ store, router, params }) {
 
     const judgement = judgeAnswer(recognition.text, question.answer, {
       findOther: (text) => findOtherSubject(text, question.subjectId),
+      requireSuffix: store.settings.requireSuffix,
     });
     finish(question, judgement, elapsedMs);
   }
@@ -302,11 +303,15 @@ export function QuizScreen({ store, router, params }) {
           answer: question.answer,
           inkImage,
           guess,
-          onChoose: (judge) => {
+          requireSuffix: store.settings.requireSuffix,
+          // 自己採点では機械が読んでいないので、「県まで書けたか」も
+          // 子ども自身に答えてもらう（○のボタンが完全形になっている）
+          onChoose: (judge, wroteSuffix) => {
             const judgement = {
               judge,
               reason: "selfcheck",
               message: selfCheckMessage(judge),
+              wroteSuffix,
             };
             finish(question, judgement, elapsedMs);
           },
@@ -327,6 +332,7 @@ export function QuizScreen({ store, router, params }) {
       judge: judgement.judge,
       hintLevel: state.hintLevel,
       elapsedMs,
+      wroteSuffix: judgement.wroteSuffix ?? false,
     });
     const outcome = battle.resolve(judgement.judge);
 
