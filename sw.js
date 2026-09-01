@@ -13,7 +13,7 @@
  *   （詳しくは docs/PWA.md）
  */
 
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = `nippon-bouken-${CACHE_VERSION}`;
 
 /**

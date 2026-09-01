@@ -126,7 +126,11 @@ export function SettingsScreen({ store, router }) {
         el("p", { class: "settings-note" }, MAP_ATTRIBUTION),
         el("p", { class: "settings-note" },
           "国土地理院「地球地図日本」の行政界データをもとに、" +
-          "小学生が見やすいように簡略化して使っています。")
+          "小学生が見やすいように簡略化して使っています。"),
+
+        // その端末が最新かどうかを確かめるための版番号。
+        // 「せっていの下に何て書いてある？」と聞けば分かる
+        el("p", { class: "settings-note" }, `アプリの版：${appVersion()}`)
       ),
 
       el("div", { class: "panel" },
@@ -217,4 +221,9 @@ function confirmReset(store, router, overlay) {
     )
   ));
   input.focus();
+}
+
+/** index.html に書いてある版番号を読む（更新が届いたか確かめるため） */
+function appVersion() {
+  return document.querySelector('meta[name="app-version"]')?.content ?? "ふめい";
 }

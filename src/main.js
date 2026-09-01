@@ -129,6 +129,36 @@ function preventTextSelection() {
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   if (location.protocol !== "https:" && location.hostname !== "localhost") return;
+
+  /* ── 新しい版が届いたら、その場で読み込み直す ──────────────────────
+   *
+   * この教材はオフラインで動くよう、端末に保存した版をまず表示する。
+   * そのため、先生が直して公開しても、児童の端末は
+   * 「1回目は古いまま、2回目からやっと新しい」という動きになる。
+   *
+   * 実際これで、地図を差し替えたのに教室では古い地図のままになった。
+   * 先生の端末では直って見えるので、気づくのが遅れる。
+   *
+   * 新しい Service Worker が主導権をにぎった時点で読み込み直せば、
+   * 開いたその場で新しい版になる。
+   * ------------------------------------------------------------------ */
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  const openedAt = Date.now();
+  let reloading = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    // 初回訪問では主導権の移動が必ず起きるので、そのときは読み込み直さない
+    if (!hadController || reloading) return;
+
+    // 遊んでいる最中に読み込み直すと、書きかけの答えが消えてしまう。
+    // 起動直後に届いた更新だけ、その場で反映する。
+    // それ以降に届いたぶんは、次に開いたときに反映される。
+    if (Date.now() - openedAt > 10_000) return;
+
+    reloading = true;
+    location.reload();
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch((error) => {
       console.warn("[pwa] Service Worker を登録できませんでした:", error);
