@@ -68,6 +68,8 @@ function boot() {
 
     router.go("title", {}, { reset: true });
 
+    preventTextSelection();
+
     // アプリが背面に回るときは取りこぼさず保存する。
     // iPad ではタブを閉じても unload が呼ばれないことがあるため visibilitychange を使う。
     document.addEventListener("visibilitychange", () => {
@@ -93,6 +95,30 @@ function boot() {
       )
     ));
   }
+}
+
+/**
+ * 文字の選択と長押しメニューを、アプリ全体で止める。
+ *
+ * ■ なぜアプリ全体で止めるのか
+ *   手書き中に手のひらが画面につくと、iOS はそれを長押しと解釈して
+ *   文字選択に入る。手のひらは手書き欄の外（問題文やパネルの上）にも
+ *   乗るので、手書き欄だけで止めても防ぎきれない。
+ *   選択が始まると書いている線が切られ、字が途中で途切れてしまう。
+ *
+ *   この教材に「文字をコピーしたい」場面は無いので、全体で止めてよい。
+ *   入力欄（名前の設定）だけは選択できるように残す。
+ */
+function preventTextSelection() {
+  const isEditable = (target) =>
+    target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+
+  document.addEventListener("selectstart", (event) => {
+    if (!isEditable(event.target)) event.preventDefault();
+  });
+  document.addEventListener("contextmenu", (event) => {
+    if (!isEditable(event.target)) event.preventDefault();
+  });
 }
 
 /**

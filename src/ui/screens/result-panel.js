@@ -30,7 +30,9 @@ import { encounterLine } from "../../content/enemies.js";
  * @returns {{ element: HTMLElement, play: () => Promise<void> }}
  */
 export function ResultPanel({ question, judgement, reward, battle, store, prefecture, onNext, onQuit }) {
-  const view = JUDGE_VIEW[judgement.judge];
+  // 「わからない」を選んだときなど、判定は同じでも見せ方を変えたい場合がある。
+  // 正直に答えを見にいったことを「ざんねん…」と言われると、次から使わなくなる。
+  const view = { ...JUDGE_VIEW[judgement.judge], ...(judgement.view ?? {}) };
   const answer = question.answer;
   const fullAnswer = answer.kanji + answer.suffix;
 

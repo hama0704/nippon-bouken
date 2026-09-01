@@ -79,7 +79,7 @@ const GROWTH = { maxHp: 6, atk: 3, def: 2, spd: 2 };
  */
 export function applyAnswer({
   store, question, judge, hintLevel = 0, elapsedMs = 0,
-  wroteSuffix = false, now = Date.now(),
+  wroteSuffix = false, skipped = false, now = Date.now(),
 }) {
   const record = store.progressOf(question.subjectId);
   const isCapital = question.part === "capital";
@@ -94,7 +94,7 @@ export function applyAnswer({
 
   const { exp, reasons, overcame } = calculateExp({
     judge, hintLevel, before,
-    wroteSuffix,
+    wroteSuffix, skipped,
     suffix: question.answer?.suffix ?? "",
   });
 
@@ -168,9 +168,17 @@ export function applyAnswer({
  * 経験値の内訳を計算する（状態は変えない）。
  * 画面に「なぜこの経験値になったか」を出せるよう、理由も返す。
  */
-export function calculateExp({ judge, hintLevel = 0, before, wroteSuffix = false, suffix = "" }) {
+export function calculateExp({
+  judge, hintLevel = 0, before, wroteSuffix = false, suffix = "", skipped = false,
+}) {
   if (judge === Judge.BATSU) {
-    return { exp: 0, reasons: ["まちがえた（つぎに正解すると 120けいけんち！）"], overcame: false };
+    return {
+      exp: 0,
+      reasons: [skipped
+        ? "こたえを見た（つぎに正解すると 120けいけんち！）"
+        : "まちがえた（つぎに正解すると 120けいけんち！）"],
+      overcame: false,
+    };
   }
 
   const isKanji = judge === Judge.MARU;

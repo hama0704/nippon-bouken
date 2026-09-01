@@ -96,6 +96,14 @@ export function QuizScreen({ store, router, params }) {
     onClick: () => showNextHint(),
   }, "ヒント");
 
+  // 分からない問題に「答えを見る」という出口を用意する。
+  // 出口が無いと、子どもは当てずっぽうで書いて×をもらうか、
+  // 手が止まってやめてしまう。どちらも学習にならない。
+  const skipButton = el("button", {
+    class: "btn btn--sub",
+    onClick: () => skip(),
+  }, "わからない");
+
   /* --- 画面の骨格 -------------------------------------------------------- */
   const root = el("div", { class: "screen quiz-screen" },
     el("header", { class: "topbar" },
@@ -125,6 +133,7 @@ export function QuizScreen({ store, router, params }) {
           el("button", { class: "btn btn--sub", onClick: () => pad.undo() }, "一画 もどす"),
           el("button", { class: "btn btn--sub", onClick: () => pad.clear() }, "ぜんぶ けす"),
           hintButton,
+          skipButton,
           submitButton
         ),
 
@@ -294,6 +303,37 @@ export function QuizScreen({ store, router, params }) {
     finish(question, judgement, elapsedMs);
   }
 
+  /**
+   * 「わからない」を押したとき。
+   *
+   * ■ 罰にしない
+   *   答えを見たことを重く罰すると、子どもは当てずっぽうを書くようになる。
+   *   知らないことを「知らない」と言えるほうが、学習としてはずっと良い。
+   *   経験値は0だが、敵の反撃は受けない。
+   *
+   * ■ ただし、ただ飛ばすだけにもしない
+   *   記録の上では「まちがえた」と同じ扱いにして、明日また出るようにする。
+   *   次にその県を正解すると「まちがい直し」の120経験値がつくので、
+   *   分からなかった県に戻ってくる動機になる。
+   */
+  function skip() {
+    if (state.submitting || !state.question) return;
+    state.submitting = true;
+    stopTimer();
+
+    const question = state.question;
+    const elapsedMs = Math.round(performance.now() - state.startedAt);
+
+    finish(question, {
+      judge: Judge.BATSU,
+      reason: "skipped",
+      message: "こたえを 見てみよう。つぎに 正解できたら 大きなけいけんちが もらえるよ！",
+      wroteSuffix: false,
+      // 記録上は「まちがえた」と同じでも、見せ方は責めない形にする
+      view: { mark: "？", label: "こたえを 見た", className: "judge--sankaku" },
+    }, elapsedMs, { skipped: true });
+  }
+
   /** 認識に頼らず、子ども自身に○△×を選んでもらう */
   function askSelfCheck(question, elapsedMs, { inkImage, guess, timedOut }) {
     replace(overlay, el("div", { class: "result-layer" },
@@ -321,7 +361,7 @@ export function QuizScreen({ store, router, params }) {
   }
 
   /** 採点結果を記録して、結果画面を出す */
-  function finish(question, judgement, elapsedMs) {
+  function finish(question, judgement, elapsedMs, { skipped = false } = {}) {
     bus.emit(Events.ANSWER_JUDGED, { question, judgement });
 
     // 順番が大事: 先に経験値とレベルを確定させてから戦闘に反映する。
@@ -333,8 +373,12 @@ export function QuizScreen({ store, router, params }) {
       hintLevel: state.hintLevel,
       elapsedMs,
       wroteSuffix: judgement.wroteSuffix ?? false,
+      skipped,
     });
-    const outcome = battle.resolve(judgement.judge);
+
+    // 「わからない」を選んだときは敵の反撃を受けない。
+    // 正直に言えたことで痛い目にあうなら、次からは当てずっぽうを書くようになる。
+    const outcome = skipped ? { skipped: true } : battle.resolve(judgement.judge);
 
     const panel = ResultPanel({
       question,

@@ -189,8 +189,22 @@ export class HandwritingPad {
     canvas.addEventListener("pointercancel", finish);
     canvas.addEventListener("pointerleave", finish);
 
-    // 長押しメニューやスクロールに持っていかれないようにする
-    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    // ── iOS の「長押しで選択・虫めがね」を止める ──────────────────────
+    //
+    // 書いているときに手のひらが画面につくと、iOS はそれを長押しと解釈して
+    // 文字選択モードに入る。すると書いている線が pointercancel で切られ、
+    // 字が途中で途切れてしまう（教室で実際に起きた）。
+    //
+    // Pointer Events の preventDefault だけでは iOS のこの動作は止まらない。
+    // touchstart / touchmove を passive:false で受けて preventDefault するのが
+    // 確実な止め方。canvas 上では既定の動作は何ひとつ要らないので全部止める。
+    const swallow = (event) => event.preventDefault();
+    canvas.addEventListener("touchstart", swallow, { passive: false });
+    canvas.addEventListener("touchmove", swallow, { passive: false });
+    canvas.addEventListener("touchend", swallow, { passive: false });
+    canvas.addEventListener("contextmenu", swallow);
+    // 選択が始まりかけたら取り消す（手のひらが枠の外へはみ出したとき用）
+    canvas.addEventListener("selectstart", swallow);
   }
 
   /**
