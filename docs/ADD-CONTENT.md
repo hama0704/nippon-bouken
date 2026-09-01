@@ -80,7 +80,7 @@ export function prefectureOf(id) { ... }                    // 表示用の元�
 **3. 地図の形を作る**（地図を使う教材の場合）
 
 `src/content/country-shapes.js` に `SPANS` と `GRID_COLS` / `GRID_ROWS` を定義します。
-形式は `pref-shapes.js` と同じ `[row, colStart, colEnd]` の配列です。
+形式は `pref-paths.js` と同じで、SVG のパス文字列・外接矩形・ラベル位置の3つです。
 
 地図が要らない教材（歴史人物など）なら、`map-renderer` の代わりに
 人物の絵や年表を出すコンポーネントを作り、問題画面で差し替えます。

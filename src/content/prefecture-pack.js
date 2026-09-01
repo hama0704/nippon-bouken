@@ -22,6 +22,7 @@
 import { PREFECTURES, PREFECTURE_BY_ID } from "./prefectures.js";
 import { REGION_BY_ID } from "./regions.js";
 import { normalize, toHiragana, acceptedForms } from "../utils/kana.js";
+import { PATHS, BOUNDS, LABEL_POINTS } from "./pref-paths.js";
 
 /** 教材パックの識別子。セーブデータの互換性判定に将来使う */
 export const PACK_ID = "prefectures-jp";
@@ -86,6 +87,25 @@ export function findOtherSubject(text, exceptId) {
     }
   }
   return null;
+}
+
+/**
+ * 地図データの健全性チェック（起動時に main.js から呼ぶ）。
+ * データの取り違えは目で見つけにくく、起動時に気づけるのがいちばん早い。
+ * @returns {string[]} 問題があればその説明。無ければ空配列
+ */
+export function validateMap(prefectureIds) {
+  const problems = [];
+  for (const id of prefectureIds) {
+    if (!PATHS[id]) { problems.push(`id=${id} の地図の形がありません`); continue; }
+    if (!PATHS[id].startsWith("M")) problems.push(`id=${id} のパスが不正です`);
+    const bounds = BOUNDS[id];
+    if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+      problems.push(`id=${id} の大きさが取れません`);
+    }
+    if (!LABEL_POINTS[id]) problems.push(`id=${id} のラベル位置がありません`);
+  }
+  return problems;
 }
 
 /** Subject id から元の都道府県データを引く（画面表示用） */

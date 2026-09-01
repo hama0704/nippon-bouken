@@ -7,24 +7,24 @@
  *   map.setState(13, "target");     // 東京を出題中の色にする
  *   map.focusOn(13);                // 東京へズーム
  *
- * 形状データ（pref-shapes.js）と描画をここで完全に分けているので、
- * 将来もっと精密な地図に差し替えるときも、直すのはこのファイルと
- * shape-builder.js だけで済む。
+ * 形のデータ（content/pref-paths.js）と描画をここで分けているので、
+ * 地図を作り直しても直すのはこのファイルだけで済む。
  */
 
 import { el } from "../utils/dom.js";
 import { PREFECTURES, fullName } from "../content/prefectures.js";
 import { REGION_BY_ID } from "../content/regions.js";
-import { GRID_COLS, GRID_ROWS, INSET_BOX, cellsOf } from "../content/pref-shapes.js";
-import { cellsToPath, labelLayout, boundsOf } from "./shape-builder.js";
-
-/** 1マスを何ユーザー単位で描くか。SVG は viewBox で拡縮するので絶対値に意味はない */
-const CELL = 10;
+import {
+  PATHS, BOUNDS, LABEL_POINTS, VIEW_WIDTH, VIEW_HEIGHT, INSET_BOX, MAP_ATTRIBUTION,
+} from "../content/pref-paths.js";
 
 /** 拡大の下限（viewBox の幅）。これ以上は寄れない */
-const MIN_VIEW_WIDTH = CELL * 6;
+const MIN_VIEW_WIDTH = VIEW_WIDTH * 0.06;
 /** 縮小の上限。日本全体より少し引いたところで止める */
-const MAX_VIEW_WIDTH = GRID_COLS * CELL * 1.4;
+const MAX_VIEW_WIDTH = VIEW_WIDTH * 1.4;
+
+/** 県名ラベルの大きさ（画面上のpx）。ズームしても見た目は変わらない */
+const LABEL_FONT_PX = 11;
 /** これ以上動いたら「なぞった」とみなし、県のタップとして扱わない */
 const DRAG_THRESHOLD_PX = 6;
 
@@ -38,9 +38,11 @@ export class MapRenderer {
   #viewport;              // ズーム・パン用の <g>
   #onSelect;
   #interactive;
+  #showLabels = true;
   /** なぞって動かしている最中の指の情報 */
   #pointers = new Map();
   #dragged = false;
+  #resizeObserver = null;
 
   /**
    * @param {object} options
@@ -63,41 +65,52 @@ export class MapRenderer {
       this.element.appendChild(this.#buildControls());
       this.element.appendChild(this.#buildHint());
     }
+
+    // 地図の表示サイズが決まってからでないとラベルの大きさを計算できない。
+    //
+    // ResizeObserver だけに任せない。環境によっては発火しないことがあり
+    // （実際、開発中に使ったプレビュー用ブラウザでは一度も発火しなかった）、
+    // そうなるとラベルが全部出っぱなしになって地図が読めなくなる。
+    // 画面に貼られた直後に自分でも1回呼ぶ。何度呼んでも結果は同じ。
+    this.#resizeObserver = new ResizeObserver(() => this.#updateLabels());
+    this.#resizeObserver.observe(this.element);
+    requestAnimationFrame(() => this.#updateLabels());
+    setTimeout(() => this.#updateLabels(), 120);
   }
 
   #build(showLabels) {
-    const width  = GRID_COLS * CELL;
-    const height = GRID_ROWS * CELL;
-
     this.#viewport = el("g", { class: "map-viewport" });
+    this.#showLabels = showLabels;
 
-    // 沖縄の別枠（点線の囲み）
+    // 沖縄の別枠（点線の囲み）。本島は本土から1000km以上はなれているため、
+    // 実際の位置に描くと日本全体がとても小さくなってしまう
     this.#viewport.appendChild(
       el("rect", {
         class: "map-inset",
-        x: (INSET_BOX.col - 1) * CELL,
-        y: (INSET_BOX.row - 1) * CELL,
-        width:  INSET_BOX.cols * CELL,
-        height: INSET_BOX.rows * CELL,
-        rx: 4,
+        x: INSET_BOX.x, y: INSET_BOX.y,
+        width: INSET_BOX.width, height: INSET_BOX.height,
+        rx: 6,
         fill: "none",
         stroke: "currentColor",
-        "stroke-width": 1,
-        "stroke-dasharray": "4 3",
-        opacity: "0.5",
+        "stroke-width": 1.5,
+        "stroke-dasharray": "8 6",
+        opacity: "0.45",
+        "vector-effect": "non-scaling-stroke",
       })
     );
 
     for (const prefecture of PREFECTURES) {
-      const cells = cellsOf(prefecture.id);
-      if (cells.length === 0) continue;
+      const d = PATHS[prefecture.id];
+      if (!d) continue;
 
       const region = REGION_BY_ID.get(prefecture.region);
       const path = el("path", {
         class: "pref",
-        d: cellsToPath(cells, CELL),
+        d,
         style: { "--pref-color": `var(${region?.colorVar ?? "--c-surface-2"})` },
         dataset: { prefId: prefecture.id, region: prefecture.region, state: "default" },
+        // 拡大しても県境の太さが変わらないようにする
+        "vector-effect": "non-scaling-stroke",
         // 地図を音声読み上げでも使えるようにする
         role: this.#interactive ? "button" : "img",
         tabindex: this.#interactive ? "0" : null,
@@ -116,26 +129,33 @@ export class MapRenderer {
 
       this.#viewport.appendChild(path);
       this.#paths.set(prefecture.id, path);
+    }
 
-      if (showLabels) {
-        // 県に収まる置き方が見つかったときだけラベルを出す。
-        // 収まらないまま出すと、となりの県の上に名前が重なって読めなくなる。
-        const layout = labelLayout(cells, prefecture.name.length, CELL);
-        if (layout) {
-          const label = buildLabel(prefecture.name, layout);
-          this.#viewport.appendChild(label);
-          this.#labels.set(prefecture.id, label);
-        }
+    // ラベルは県の形の上に重ねたいので、すべての県を描いたあとに作る
+    if (showLabels) {
+      for (const prefecture of PREFECTURES) {
+        const point = LABEL_POINTS[prefecture.id];
+        if (!point) continue;
+        const label = el("text", {
+          class: "pref-label",
+          x: point.x, y: point.y,
+        }, prefecture.name);
+        this.#viewport.appendChild(label);
+        this.#labels.set(prefecture.id, label);
       }
     }
 
-    return el("svg", {
+    const svg = el("svg", {
       class: "map-view",
-      viewBox: `0 0 ${width} ${height}`,
+      viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
       preserveAspectRatio: "xMidYMid meet",
       role: "group",
       "aria-label": "日本地図",
     }, this.#viewport);
+
+    // 地図データの出典。利用条件として表示が必要
+    svg.appendChild(el("title", {}, `日本地図（${MAP_ATTRIBUTION}）`));
+    return svg;
   }
 
   /* --- 見た目の操作 ------------------------------------------------------ */
@@ -198,24 +218,52 @@ export class MapRenderer {
    * 指定した県が画面いっぱいに近づくようズームする。
    * 出題時に「どこを答えるのか」を分かりやすくするために使う。
    * @param {number} prefectureId
-   * @param {number} [padding=3] まわりに残す余白（マス数）
+   * @param {number} [padding=1.4] まわりに残す余白（その県の大きさの何倍か）
    */
-  focusOn(prefectureId, padding = 3) {
-    const cells = cellsOf(prefectureId);
-    if (cells.length === 0) return;
-    const bounds = boundsOf(cells, CELL);
-    const pad = padding * CELL;
-    this.setViewBox(
-      bounds.x - pad,
-      bounds.y - pad,
-      bounds.width + pad * 2,
-      bounds.height + pad * 2
-    );
+  focusOn(prefectureId, padding = 1.4) {
+    const bounds = BOUNDS[prefectureId];
+    if (!bounds) return;
+
+    // 県の大きさに比例した余白をとる。
+    // 東京のような小さな県でも、まわりの県がいっしょに見えて
+    // 「日本のどのあたりか」が分かるようにするため。
+    const size = Math.max(bounds.width, bounds.height);
+    const pad = size * padding;
+    const width = bounds.width + pad * 2;
+    const height = bounds.height + pad * 2;
+
+    this.setViewBox(bounds.x - pad, bounds.y - pad, width, height);
   }
 
   /** 日本全体が見える状態に戻す */
   resetZoom() {
-    this.setViewBox(0, 0, GRID_COLS * CELL, GRID_ROWS * CELL);
+    this.setViewBox(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+  }
+
+  /**
+   * 県名ラベルの見せ方を、いまのズームに合わせて調整する。
+   *
+   * ・文字の大きさは画面上で一定（ズームしても読める大きさのまま）
+   * ・その県に文字が収まらないときは出さない
+   *   → 拡大すると、それまで狭くて出せなかった県の名前が現れる
+   *
+   * 収まらないのに出すと、となりの県の上に名前が重なって読めなくなる。
+   */
+  #updateLabels() {
+    if (!this.#showLabels || this.#labels.size === 0) return;
+    const unitsPerPixel = this.#unitsPerPixel();
+    const fontSize = LABEL_FONT_PX * unitsPerPixel;
+
+    for (const [id, label] of this.#labels) {
+      const point = LABEL_POINTS[id];
+      const name = label.textContent ?? "";
+      // 文字列の半分の長さが、海岸線までの距離に収まるか
+      const needed = (name.length * fontSize) / 2;
+      const fits = point.r >= needed * 0.85;
+
+      label.style.display = fits ? "" : "none";
+      if (fits) label.setAttribute("font-size", fmt(fontSize));
+    }
   }
 
   /**
@@ -237,6 +285,7 @@ export class MapRenderer {
       || document.hidden;
     if (reduceMotion || durationMs <= 0) {
       this.#svg.setAttribute("viewBox", `${to.x} ${to.y} ${to.w} ${to.h}`);
+      this.#updateLabels();
       return;
     }
 
@@ -249,6 +298,7 @@ export class MapRenderer {
       const cw = start.w + (to.w - start.w) * e;
       const ch = start.h + (to.h - start.h) * e;
       this.#svg.setAttribute("viewBox", `${cx} ${cy} ${cw} ${ch}`);
+      this.#updateLabels();
       if (t < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -257,6 +307,12 @@ export class MapRenderer {
   /** 県の <path> 要素を取り出す（演出で直接触りたいとき用） */
   pathOf(prefectureId) {
     return this.#paths.get(prefectureId) ?? null;
+  }
+
+  /** 画面から外すときに呼ぶ（監視を残すと画面を移るたびに積み上がる） */
+  destroy() {
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = null;
   }
 
   /* --- 指でなぞって動かす・つまんで拡大する --------------------------------
@@ -428,29 +484,9 @@ export class MapRenderer {
     const clampedY = clamp(y, -marginY, mapHeight - height + marginY);
 
     this.#svg.setAttribute("viewBox", `${fmt(clampedX)} ${fmt(clampedY)} ${fmt(width)} ${fmt(height)}`);
+    this.#updateLabels();
   }
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const fmt = (value) => Math.round(value * 100) / 100;
-
-/**
- * 県名のラベルを作る。
- * 縦書きのときは1文字ずつ <tspan> に分け、下へずらして積む
- * （SVG には縦書きの指定が実質使えないため、自前で積む必要がある）。
- */
-function buildLabel(name, layout) {
-  if (layout.orientation === "horizontal") {
-    return el("text", { class: "pref-label", x: layout.x, y: layout.y }, name);
-  }
-
-  const chars = [...name];
-  const lineHeight = 8;
-  // 文字列全体の中心が layout.y に来るよう、先頭の位置を上へずらす
-  const firstY = layout.y - ((chars.length - 1) * lineHeight) / 2;
-
-  return el("text", { class: "pref-label", x: layout.x, y: firstY },
-    chars.map((char, index) =>
-      el("tspan", { x: layout.x, dy: index === 0 ? 0 : lineHeight }, char))
-  );
-}

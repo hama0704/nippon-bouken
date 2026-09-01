@@ -13,7 +13,7 @@
  *   （詳しくは docs/PWA.md）
  */
 
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE_NAME = `nippon-bouken-${CACHE_VERSION}`;
 
 /**
@@ -47,7 +47,7 @@ const PRECACHE_URLS = [
   "./src/engine/analytics-engine.js",
 
   "./src/content/prefectures.js",
-  "./src/content/pref-shapes.js",
+  "./src/content/pref-paths.js",
   "./src/content/regions.js",
   "./src/content/enemies.js",
   "./src/content/prefecture-pack.js",
@@ -58,7 +58,6 @@ const PRECACHE_URLS = [
   "./src/platform/recognition/selfcheck-recognizer.js",
 
   "./src/map/map-renderer.js",
-  "./src/map/shape-builder.js",
 
   "./src/ui/screens/title-screen.js",
   "./src/ui/screens/mode-screen.js",

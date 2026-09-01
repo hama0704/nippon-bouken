@@ -171,7 +171,10 @@ export function QuizScreen({ store, router, params }) {
     // ラベルは出さない（名前が見えていたら問題にならない）。
     paintMap();
     map.setState(question.mapTargetId, "target");
-    map.focusOn(question.mapTargetId, 6);
+    // 答えの県のまわりが、その2倍の広さまで見えるようにする。
+    // 寄りすぎると「日本のどこか」が分からず、引きすぎると光っている県が見えない。
+    // それでも足りなければ、指で動かすか「ぜんたい」ボタンで全体を見られる。
+    map.focusOn(question.mapTargetId, 2);
 
     // 戦闘表示を最新にする
     if (battle.isGameCleared) battlePanel.hide();

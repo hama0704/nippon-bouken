@@ -12,6 +12,7 @@
 import { el, clear, replace, announce } from "../../utils/dom.js";
 import { listRecognizers } from "../../platform/recognition/recognizer.js";
 import { PREFECTURE_IDS } from "../../content/prefectures.js";
+import { MAP_ATTRIBUTION } from "../../content/pref-paths.js";
 import { exportSave } from "../../core/save-manager.js";
 import { downloadCsv } from "../../engine/analytics-engine.js";
 import { toDateKey } from "../../core/store.js";
@@ -117,6 +118,15 @@ export function SettingsScreen({ store, router }) {
           { id: true,  label: "鳴らす" },
           { id: false, label: "鳴らさない" },
         ], store.settings.sound, (value) => set({ sound: value }))
+      ),
+
+      el("div", { class: "panel" },
+        el("h3", { class: "panel__title" }, "この教材について"),
+        // 地図データの利用条件として、出典の表示が必要
+        el("p", { class: "settings-note" }, MAP_ATTRIBUTION),
+        el("p", { class: "settings-note" },
+          "国土地理院「地球地図日本」の行政界データをもとに、" +
+          "小学生が見やすいように簡略化して使っています。")
       ),
 
       el("div", { class: "panel" },

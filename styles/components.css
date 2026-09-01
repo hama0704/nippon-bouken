@@ -270,14 +270,18 @@ html[data-hand="left"] .map-controls { right: auto; left: var(--sp-2); }
 /* 地図上のラベル（県名）。小さい県では JS が非表示にする */
 .map-view .pref-label {
   fill: var(--c-text);
-  font-size: 7px;
+  /* 大きさは map-renderer が font-size 属性で入れる。
+     ズームしても画面上の見た目が変わらないようにするため、
+     ここで固定値を決めてしまわない */
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: middle;
   pointer-events: none;
+  /* 県の色の上でも読めるよう、文字のふちを黒く縁取る */
   paint-order: stroke;
-  stroke: rgb(0 0 0 / 0.6);
-  stroke-width: 2.5;
+  stroke: rgb(0 0 0 / 0.65);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
 }
 
 /* --------------------------------------------------------------------------

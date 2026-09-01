@@ -17,11 +17,10 @@ import { el, replace, clear } from "../../utils/dom.js";
 import { prefectureRuby } from "../components/answer-text.js";
 import { PREFECTURES, PREFECTURE_BY_ID, fullName } from "../../content/prefectures.js";
 import { REGIONS, REGION_BY_ID } from "../../content/regions.js";
-import { cellsOf } from "../../content/pref-shapes.js";
-import { cellsToPath, boundsOf } from "../../map/shape-builder.js";
+import { PATHS, BOUNDS } from "../../content/pref-paths.js";
 import { statsOf } from "../../engine/analytics-engine.js";
 
-const CELL = 10;
+
 
 export function DexScreen({ store, router }) {
   const state = { regionFilter: null };
@@ -107,10 +106,13 @@ function dexCard(store, prefecture, onOpen) {
  * 地図と同じ形状データから作るので、図鑑と地図で形が食い違うことがない。
  */
 function silhouette(prefectureId, fill) {
-  const cells = cellsOf(prefectureId);
-  const bounds = boundsOf(cells, CELL);
-  // 形のまわりに少し余白をとって、はみ出さないようにする
-  const pad = CELL * 0.6;
+  const bounds = BOUNDS[prefectureId];
+  const d = PATHS[prefectureId];
+  if (!bounds || !d) return el("svg", { class: "dex-card__shape" });
+
+  // 形のまわりに少し余白をとって、はみ出さないようにする。
+  // 細長い県（長野・和歌山）でも枠に触れないよう、大きいほうの辺を基準にする
+  const pad = Math.max(bounds.width, bounds.height) * 0.08;
 
   return el("svg", {
     class: "dex-card__shape",
@@ -119,7 +121,7 @@ function silhouette(prefectureId, fill) {
     preserveAspectRatio: "xMidYMid meet",
     "aria-hidden": "true",
   },
-    el("path", { d: cellsToPath(cells, CELL), fill })
+    el("path", { d, fill })
   );
 }
 

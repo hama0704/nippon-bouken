@@ -14,7 +14,7 @@ import { ScreenRouter } from "./core/screen-router.js";
 import { el, replace } from "./utils/dom.js";
 
 import { PREFECTURE_IDS } from "./content/prefectures.js";
-import { validateShapes } from "./content/pref-shapes.js";
+import { validateMap } from "./content/prefecture-pack.js";
 
 import { TitleScreen } from "./ui/screens/title-screen.js";
 import { ModeScreen } from "./ui/screens/mode-screen.js";
@@ -40,11 +40,11 @@ function boot() {
   const mountPoint = document.getElementById("screen-root");
 
   try {
-    // 地図データの取り違え（マスの重複・抜け）は起動時に必ず検出する。
+    // 地図データの欠けは起動時に必ず検出する。
     // 作った直後は気づきにくく、後から探すと非常に時間を食うため。
-    const problems = validateShapes(PREFECTURE_IDS);
+    const problems = validateMap(PREFECTURE_IDS);
     if (problems.length > 0) {
-      console.warn("[map] 形状データに問題があります:\n" + problems.join("\n"));
+      console.warn("[map] 地図データに問題があります:\n" + problems.join("\n"));
     }
 
     const store = new Store(PREFECTURE_IDS);

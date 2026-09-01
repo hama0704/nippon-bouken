@@ -63,11 +63,9 @@ html[data-font="large"] { --font-scale: 1.5; }   /* 既定は 1.25 */
 --radius-lg: 0;
 ```
 
-地図の県の角丸は別で、`src/map/shape-builder.js` の定数です。
-
-```js
-const CORNER_RADIUS = 0.3;   // 0 にすると角ばった地図になる
-```
+地図の県境の太さは `styles/components.css` の `.map-view .pref` で決めています。
+`vector-effect: non-scaling-stroke` を付けてあるので、
+拡大しても線の太さは変わりません。
 
 ### 地方の色を変える
 

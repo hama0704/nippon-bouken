@@ -14,7 +14,7 @@
  *   population     人口の目安（図鑑）
  *   famous         有名なもの（図鑑）
  *
- * 地図の形（どのマスを占めるか）は pref-shapes.js 側に分離している。
+ * 地図の形は content/pref-paths.js 側に分離している（本物の白地図）。
  * データを直したいときの手順は docs/CUSTOMIZE.md を参照。
  */
 

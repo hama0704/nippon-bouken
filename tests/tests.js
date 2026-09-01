@@ -21,9 +21,10 @@ import { nextSchedule, isDue, INTERVALS_DAYS } from "../src/engine/srs-engine.js
 import { buildCandidates, weightOf, isWeak } from "../src/engine/question-engine.js";
 import { masteryOf } from "../src/engine/analytics-engine.js";
 import { PREFECTURES, PREFECTURE_IDS, PREFECTURE_BY_ID } from "../src/content/prefectures.js";
-import { validateShapes, cellsOf, GRID_COLS, GRID_ROWS } from "../src/content/pref-shapes.js";
-import { cellsToPath, labelLayout } from "../src/map/shape-builder.js";
-import { SUBJECTS, findOtherSubject } from "../src/content/prefecture-pack.js";
+import {
+  PATHS, BOUNDS, LABEL_POINTS, VIEW_WIDTH, VIEW_HEIGHT, INSET_BOX,
+} from "../src/content/pref-paths.js";
+import { SUBJECTS, findOtherSubject, validateMap } from "../src/content/prefecture-pack.js";
 import { ENEMIES_BY_REGION, ALL_ENEMIES, DEMON_LORD } from "../src/content/enemies.js";
 import { REGIONS } from "../src/content/regions.js";
 import { createNewSave, createProgressEntry, SAVE_VERSION } from "../src/core/save-manager.js";
@@ -383,98 +384,80 @@ describe("question ― 出題の重みと候補", () => {
 /* =========================================================================
  * 地図データ
  * ======================================================================= */
-describe("map ― 形状データの整合性", () => {
-  it("47県すべてに形があり、マスの重複も範囲外もない", () => {
-    expect(validateShapes(PREFECTURE_IDS)).toHaveLength(0);
+describe("map ― 地図データの整合性", () => {
+  it("47県すべてに形・大きさ・ラベル位置がある", () => {
+    expect(validateMap(PREFECTURE_IDS)).toHaveLength(0);
   });
 
-  it("どの県のマスも辺でつながっている（角だけの接触がない）", () => {
+  it("すべての県が SVG のパスになっている", () => {
     for (const id of PREFECTURE_IDS) {
-      const cells = cellsOf(id);
-      const seen = new Set([`${cells[0].col},${cells[0].row}`]);
-      const queue = [cells[0]];
-      const all = new Set(cells.map((c) => `${c.col},${c.row}`));
-
-      while (queue.length > 0) {
-        const { col, row } = queue.pop();
-        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-          const key = `${col + dc},${row + dr}`;
-          if (all.has(key) && !seen.has(key)) {
-            seen.add(key);
-            const [c, r] = key.split(",").map(Number);
-            queue.push({ col: c, row: r });
-          }
-        }
-      }
-      if (seen.size !== cells.length) {
-        throw new Error(`id=${id} のマスが分かれています（${seen.size}/${cells.length}）`);
-      }
+      const d = PATHS[id];
+      expect(d.startsWith("M")).toBeTruthy();
+      expect(d.endsWith("Z")).toBeTruthy();
     }
   });
 
-  it("すべての県が SVG のパスになる", () => {
+  it("すべての県が地図の枠の中に収まっている", () => {
     for (const id of PREFECTURE_IDS) {
-      const path = cellsToPath(cellsOf(id), 10);
-      expect(path.startsWith("M")).toBeTruthy();
-      expect(path.endsWith("Z")).toBeTruthy();
-    }
-  });
-
-  it("ラベルの位置が県の中に入る", () => {
-    for (const id of PREFECTURE_IDS) {
-      const cells = cellsOf(id);
+      const b = BOUNDS[id];
       const name = PREFECTURE_BY_ID.get(id).name;
-      const layout = labelLayout(cells, name.length, 10);
-      if (!layout) continue;           // 収まらない県はラベルを出さない
-      const col = Math.floor(layout.x / 10) + 1;
-      const row = Math.floor(layout.y / 10) + 1;
-      const inside = cells.some((c) => c.col === col && c.row === row);
-      if (!inside) throw new Error(`id=${id}（${name}）のラベルが県の外にあります`);
-    }
-  });
-
-  it("ラベルが県の幅からはみ出さない", () => {
-    // はみ出したまま出すと、となりの県の上に名前が重なって読めなくなる
-    for (const id of PREFECTURE_IDS) {
-      const cells = cellsOf(id);
-      const name = PREFECTURE_BY_ID.get(id).name;
-      const layout = labelLayout(cells, name.length, 10);
-      if (!layout) continue;
-
-      // ラベルは中心（layout.x, layout.y）から左右（または上下）に
-      // 文字数ぶん広がる。その各文字が乗るマスがすべてその県のものであること。
-      const horizontal = layout.orientation === "horizontal";
-      const startEdge = (horizontal ? layout.x : layout.y) - (name.length * 10) / 2;
-
-      for (let i = 0; i < name.length; i++) {
-        const center = startEdge + (i + 0.5) * 10;
-        const c = horizontal ? Math.floor(center / 10) + 1 : Math.floor(layout.x / 10) + 1;
-        const r = horizontal ? Math.floor(layout.y / 10) + 1 : Math.floor(center / 10) + 1;
-        if (!cells.some((cell) => cell.col === c && cell.row === r)) {
-          throw new Error(`id=${id}（${name}）のラベルが県からはみ出します`);
-        }
+      if (b.x < -1 || b.y < -1) throw new Error(name + " が枠の左上をはみ出しています");
+      if (b.x + b.width > VIEW_WIDTH + 1 || b.y + b.height > VIEW_HEIGHT + 1) {
+        throw new Error(name + " が枠の右下をはみ出しています");
       }
     }
   });
 
-  it("県名のラベルが出せる県が8割以上ある", () => {
-    // 地図としての手がかりが減りすぎていないことの確認
-    const withLabel = PREFECTURE_IDS.filter((id) => {
+  it("ラベルの位置が県の外接矩形の中にある", () => {
+    for (const id of PREFECTURE_IDS) {
+      const b = BOUNDS[id];
+      const p = LABEL_POINTS[id];
       const name = PREFECTURE_BY_ID.get(id).name;
-      return labelLayout(cellsOf(id), name.length, 10) !== null;
-    });
-    if (withLabel.length < PREFECTURE_IDS.length * 0.8) {
-      throw new Error(`ラベルを出せるのが ${withLabel.length}/47 しかありません`);
+      const inside = p.x >= b.x && p.x <= b.x + b.width
+                  && p.y >= b.y && p.y <= b.y + b.height;
+      if (!inside) throw new Error(name + " のラベルが県の外にあります");
     }
   });
 
-  it("グリッドからはみ出さない", () => {
+  it("どの県も、指でタップできる大きさがある", () => {
+    // 画面幅1000のときに 8px 角を下限とする。
+    // これを下回ると、香川や大阪を子どもが押せない
     for (const id of PREFECTURE_IDS) {
-      for (const { col, row } of cellsOf(id)) {
-        expect(col >= 1 && col <= GRID_COLS).toBeTruthy();
-        expect(row >= 1 && row <= GRID_ROWS).toBeTruthy();
+      const b = BOUNDS[id];
+      const name = PREFECTURE_BY_ID.get(id).name;
+      if (Math.max(b.width, b.height) < 8) {
+        throw new Error(name + " が小さすぎます（" + b.width + "×" + b.height + "）");
       }
     }
+  });
+
+  it("県どうしの位置関係が実際の日本と合っている", () => {
+    // 地図を作り直したときに、南北・東西が入れ替わっていないかを見る
+    const cx = (id) => BOUNDS[id].x + BOUNDS[id].width / 2;
+    const cy = (id) => BOUNDS[id].y + BOUNDS[id].height / 2;
+    const northOf = (a, b, label) => {
+      if (!(cy(a) < cy(b))) throw new Error(label);
+    };
+    const westOf = (a, b, label) => {
+      if (!(cx(a) < cx(b))) throw new Error(label);
+    };
+    northOf(1, 2, "北海道が青森より南にあります");
+    northOf(2, 13, "青森が東京より南にあります");
+    northOf(13, 40, "東京が福岡より南にあります");
+    westOf(40, 13, "福岡が東京より東にあります");
+    westOf(35, 27, "山口が大阪より東にあります");
+    westOf(27, 14, "大阪が神奈川より東にあります");
+    northOf(9, 14, "栃木が神奈川より南にあります");
+    westOf(38, 36, "愛媛が徳島より東にあります");
+  });
+
+  it("沖縄が別枠におさまっている", () => {
+    const b = BOUNDS[47];
+    const box = INSET_BOX;
+    const inside = b.x >= box.x - 1 && b.y >= box.y - 1
+      && b.x + b.width <= box.x + box.width + 1
+      && b.y + b.height <= box.y + box.height + 1;
+    if (!inside) throw new Error("沖縄が別枠からはみ出しています");
   });
 });
 

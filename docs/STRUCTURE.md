@@ -48,9 +48,9 @@ prefecture-rpg/
 │   └── run-node.mjs            コマンドラインで実行
 │
 ├── tools/
-│   ├── generate-map.mjs        地図データを緯度経度から生成する（アプリ本体では使わない）
-│   ├── spans.txt               生成結果。pref-shapes.js に貼る
-│   └── map-preview.png         生成結果の見た目。地図を直したらまずこれを見る
+│   ├── build-map.mjs           国土地理院のデータ → 地図（アプリ本体では使わない）
+│   ├── preview-map.mjs         生成した地図を目で確かめる SVG を出す
+│   └── map-preview.svg         その出力。地図を直したらまずこれを見る
 │
 ├── docs/                       このフォルダ
 │
@@ -73,7 +73,7 @@ prefecture-rpg/
     │
     ├── content/                ── 教材データ ──────────────────
     │   ├── prefectures.js      ★ 47都道府県のマスターデータ
-    │   ├── pref-shapes.js      ★ 地図の形（マスの集まり）
+    │   ├── pref-paths.js       ★ 地図の形（本物の白地図。tools/build-map.mjs が生成）
     │   ├── regions.js          9地方の定義と色
     │   ├── enemies.js          敵の定義（強さは地方の順番から自動計算）
     │   └── prefecture-pack.js  上記を engine が読める形に変換するアダプタ
@@ -87,8 +87,7 @@ prefecture-rpg/
     │       └── README.md             差し替え手順
     │
     ├── map/
-    │   ├── map-renderer.js     地図SVGの組み立て・色分け・ズーム
-    │   └── shape-builder.js    マスの集まり → 角の丸い輪郭パス
+    │   └── map-renderer.js     地図SVGの組み立て・色分け・ズーム・指での操作
     │
     ├── ui/
     │   ├── screens/            画面ごとに1ファイル
@@ -127,7 +126,7 @@ prefecture-rpg/
 | 敵を強く／弱くする | `src/content/enemies.js` の `BALANCE` |
 | 敵を追加する | `src/content/enemies.js` ＋ `src/ui/components/enemy-art.js` |
 | 県のデータ（名産など）を直す | `src/content/prefectures.js` |
-| 地図の形を直す | `tools/generate-map.mjs` で作り直す（→ docs/CUSTOMIZE.md） |
+| 地図を作り直す | `tools/build-map.mjs`（→ docs/CUSTOMIZE.md） |
 | ヒントの文章を変える | `src/engine/question-engine.js` の `buildHints` |
 | 文字認識を差し替える | `src/platform/recognition/README.md` |
 | 効果音を変える | `src/platform/audio-manager.js` の `SOUNDS` |

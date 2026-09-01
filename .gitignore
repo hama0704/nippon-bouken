@@ -1,0 +1,7 @@
+# 地図の元データ（13MB）。必要なときに落としてくる。
+# 手順は docs/CUSTOMIZE.md「地図を作り直す」を参照
+tools/japan.geojson
+
+# OS が作るもの
+.DS_Store
+Thumbs.db
