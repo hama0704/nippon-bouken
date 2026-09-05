@@ -78,6 +78,7 @@ function boot() {
     window.addEventListener("pagehide", () => store.flush());
 
     registerServiceWorker();
+    checkForNewVersion();
 
     // 開発時にコンソールから状態を覗けるようにしておく
     if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
@@ -126,6 +127,50 @@ function preventTextSelection() {
  * オフラインで動かすための仕組みだが、file:// で開いたときや
  * 未対応ブラウザでは黙って何もしない（起動を止めない）。
  */
+/**
+ * 表示している版が古くないかを、ネットワークに直接たずねて確かめる。
+ *
+ * ■ なぜ Service Worker まかせにしないのか
+ *   新しい Service Worker が動きはじめたときに読み込み直す仕組みも入れてあるが、
+ *   それは sw.js そのものが変わったときにしか働かない。
+ *   画面や地図だけを直して公開した場合、sw.js は前と同じ中身なので
+ *   「新しい版が来た」と気づけず、児童の端末は古いままになる。
+ *   （実際、地図を本物に差し替えたのに教室では古い地図のままだった）
+ *
+ *   そこで index.html の版番号をネットワークから直接読み、
+ *   いま表示している版とちがえば読み込み直す。
+ *   版番号の置き場所は index.html の1か所だけで済む。
+ *
+ * ■ 読み込み直しても安全な理由
+ *   Service Worker は「まずキャッシュを返し、裏で取り直す」ので、
+ *   この画面を読み込んだ時点で保存ぶんはもう新しくなっている。
+ *   もう一度読み込めば新しい版が出る。
+ *   同じ版で何度も読み込み直さないよう、1回で打ち止めにしている。
+ */
+async function checkForNewVersion() {
+  const current = document.querySelector('meta[name="app-version"]')?.content;
+  if (!current || !navigator.onLine) return;
+
+  try {
+    const html = await (await fetch("index.html", { cache: "no-store" })).text();
+    const latest = /name="app-version"\s+content="([^"]+)"/.exec(html)?.[1];
+    if (!latest || latest === current) return;
+
+    // 同じ版について読み込み直すのは1回だけ。
+    // これが無いと、何かの理由で版が合わないときに延々と再読み込みしてしまう
+    const key = "nipponBouken:reloadedFor";
+    if (sessionStorage.getItem(key) === latest) {
+      console.warn(`[update] 新しい版 ${latest} が届いていますが、まだ切り替わっていません。`);
+      return;
+    }
+    sessionStorage.setItem(key, latest);
+    console.info(`[update] 新しい版 ${latest} を読み込みます（いまは ${current}）`);
+    location.reload();
+  } catch {
+    // オフラインなら確かめようがない。保存ぶんでそのまま遊べるので何もしない
+  }
+}
+
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   if (location.protocol !== "https:" && location.hostname !== "localhost") return;
