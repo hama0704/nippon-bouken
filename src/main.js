@@ -169,11 +169,40 @@ async function checkForNewVersion() {
       return;
     }
     sessionStorage.setItem(key, latest);
-    console.info(`[update] 新しい版 ${latest} を読み込みます（いまは ${current}）`);
+    console.info(`[update] 新しい版 ${latest} を取り込みます（いまは ${current}）`);
+
+    // 保存ぶんを新しくしてから読み込み直す。
+    // 先に読み込み直すと、まだ古いままの保存ぶんが出てきてしまう
+    await refreshServiceWorkerCache();
     location.reload();
   } catch {
     // オフラインなら確かめようがない。保存ぶんでそのまま遊べるので何もしない
   }
+}
+
+/**
+ * Service Worker に、保存ぶんを取り直してもらう。
+ * 終わるまで待つ（返事が来なくても8秒であきらめて先へ進む）。
+ */
+function refreshServiceWorkerCache() {
+  const worker = navigator.serviceWorker?.controller;
+  if (!worker) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const onMessage = (event) => {
+      if (event.data?.type !== "refreshed") return;
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+      resolve();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    worker.postMessage({ type: "refresh" });
+
+    // 返事が来ないまま止まってしまうより、古い版でも動くほうがまし
+    setTimeout(() => {
+      navigator.serviceWorker.removeEventListener("message", onMessage);
+      resolve();
+    }, 8000);
+  });
 }
 
 function registerServiceWorker() {

@@ -13,7 +13,7 @@
  *   （詳しくは docs/PWA.md）
  */
 
-const CACHE_VERSION = "v7";
+const CACHE_VERSION = "v8";
 const CACHE_NAME = `nippon-bouken-${CACHE_VERSION}`;
 
 /**
@@ -113,6 +113,30 @@ self.addEventListener("activate", (event) => {
         .map((name) => caches.delete(name))
     );
     await self.clients.claim();
+  })());
+});
+
+/**
+ * 画面から「新しい版を取り込んで」と頼まれたときの処理。
+ *
+ * 新しい版が出ていることに画面が気づいても、
+ * 保存ぶんが古いまま読み込み直すと、また古い版が出てしまう。
+ * （裏での取り直しは間に合わないことがある）
+ * ここで全ファイルを取り直してから、終わったことを画面に知らせる。
+ */
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "refresh") return;
+
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.all(PRECACHE_URLS.map(async (url) => {
+      try {
+        await cache.add(new Request(url, { cache: "reload" }));
+      } catch (error) {
+        console.warn("[sw] 取り直せませんでした:", url, error);
+      }
+    }));
+    event.source?.postMessage({ type: "refreshed" });
   })());
 });
 
