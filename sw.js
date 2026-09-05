@@ -13,7 +13,7 @@
  *   （詳しくは docs/PWA.md）
  */
 
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const CACHE_NAME = `nippon-bouken-${CACHE_VERSION}`;
 
 /**
@@ -138,7 +138,13 @@ self.addEventListener("fetch", (event) => {
 
   // GET 以外と、別ドメインへの通信には手を出さない
   if (request.method !== "GET") return;
-  if (new URL(request.url).origin !== self.location.origin) return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // 「新しい版が出ていないか」を確かめる問い合わせ。
+  // ここで保存ぶんを返してしまうと、アプリはいつまでも
+  // 「自分が最新だ」と思いこんで更新に気づけない。素通しする。
+  if (url.searchParams.has("_check")) return;
 
   event.respondWith((async () => {
     const cached = await caches.match(request, { ignoreSearch: false });

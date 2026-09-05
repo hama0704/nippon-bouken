@@ -152,7 +152,12 @@ async function checkForNewVersion() {
   if (!current || !navigator.onLine) return;
 
   try {
-    const html = await (await fetch("index.html", { cache: "no-store" })).text();
+    // 問い合わせ先に印（_check）を付ける。
+    // これが無いと Service Worker が保存ぶんを返してしまい、
+    // 「ネットワークに聞いている」つもりで古い版を読むことになる。
+    // sw.js 側は _check の付いた要求には手を出さない。
+    const url = `index.html?_check=${Date.now()}`;
+    const html = await (await fetch(url, { cache: "no-store" })).text();
     const latest = /name="app-version"\s+content="([^"]+)"/.exec(html)?.[1];
     if (!latest || latest === current) return;
 
